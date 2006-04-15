@@ -1,0 +1,11 @@
+Changes
+Makefile.PL
+MANIFEST
+Packed.xs
+ppport.h
+README
+t/Tie-Array-Packed.t
+lib/Tie/Array/Packed.pm
+bm/bm.pl
+bm/mm.pl
+META.yml                                 Module meta-data (added by MakeMaker)

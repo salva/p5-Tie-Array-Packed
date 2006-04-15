@@ -1,0 +1,6 @@
+Revision history for Perl extension Tie::Array::Packed.
+
+0.01  Fri Apr 14 00:06:14 2006
+	- original version; created by h2xs 1.23 with options
+		-An Tie::Array::Packed
+

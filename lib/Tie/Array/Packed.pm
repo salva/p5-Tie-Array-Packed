@@ -2,7 +2,7 @@ package Tie::Array::Packed;
 
 use 5.008;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use strict;
 use warnings;
@@ -202,7 +202,7 @@ Note that the returned array is not blessed into any package.
 
 =item Tie::Array::Packed::Integer->make_with_packed($init_string)
 
-=itme Tie::Array::Packed::Integer->make_with_packed($init_string, @init_values)
+=item Tie::Array::Packed::Integer->make_with_packed($init_string, @init_values)
 
 similar to the method before but get an additional argument to
 initialize the storage scalar.

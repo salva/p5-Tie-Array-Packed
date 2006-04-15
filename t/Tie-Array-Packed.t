@@ -5,39 +5,50 @@
 use strict;
 use warnings;
 
-use Test::More tests => 25;
+use Test::More tests => 222;
 
 BEGIN {
     use_ok( 'Tie::Array::Packed' );
 }
 
-my $tie = Tie::Array::Packed::Integer->make(1 .. 20 );
-my $obj = tied(@$tie);
-isa_ok( $tie, 'ARRAY', 'make returned an object that' );
-isa_ok( $obj, 'Tie::Array::Packed', 'the tied object' );
-is( "@$tie",    "@{[1..20]}", "All" );
-is( $tie->[0],  1,            'Zero index' );
-is( $tie->[3],  4,            'Intermediate index' );
-is( $tie->[19], 20,           'Last index' );
-is( $tie->[-1], 20,           'Last index (-1)' );
-is( $tie->[20], undef,        'Out of bounds' );
+for my $packer (qw(c C F f d i I i! I! s! S! l! L! n N v )) {
+    my $class = "Tie::Array::Packed::$packer";
 
-push @$tie, 10;
+    my $tie = $class->make(1 .. 20 );
+    my $obj = tied(@$tie);
+    isa_ok( $tie, 'ARRAY', 'make returned an object that' );
+    isa_ok( $obj, 'Tie::Array::Packed', 'the tied object' );
+    is( "@$tie",    "@{[1..20]}", "All $packer" );
+    is( $tie->[0],  1,            "Zero index $packer" );
+    is( $tie->[3],  4,            "Intermediate index $packer" );
+    is( $tie->[19], 20,           "Last index $packer" );
+    is( $tie->[-1], 20,           "Last index (-1) $packer" );
+    is( $tie->[20], undef,        "Out of bounds $packer" );
 
-is( $tie->[20], 10, 'Pushed' );
-is( pop @$tie,  10, 'Popped' );
-is( @$tie,      20, 'Count' );
-is( $#$tie,     19, 'Count 2' );
+    push @$tie, 10;
 
-my $float = Tie::Array::Packed::Number->make(1 .. 20 );
-isa_ok( tied(@$float), 'Tie::Array::Packed::Number', '$float' );
-is( "@$float", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", "All (Number)" );
-$float->[0] = 1.414;
-is( sprintf( "%0.3f", $float->[0] ), sprintf( "%0.3f", 1.414 ), 'Float check' );
-ok( exists( $float->[0] ), '$float->[0] exists' );
-ok( !exists( $float->[20] ), '$float->[1] not exists' );
-is( delete( $float->[1] ), 2, 'Delete returns correctly' );
-is( $float->[1], 0, 'Deleted record is 0' );
+    is( $tie->[20], 10, 'Pushed' );
+    is( pop @$tie,  10, 'Popped' );
+    is( @$tie,      20, 'Count' );
+    is( $#$tie,     19, 'Count 2' );
+
+}
+
+for my $packer (qw(F f d)) {
+    my $class = "Tie::Array::Packed::$packer";
+
+    my $float = $class->make(1 .. 20 );
+    isa_ok( tied(@$float), $class, '$float' );
+    isa_ok( tied(@$float), "Tie::Array::Packed", '$float' );
+    is( "@$float", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", "All (Number)" );
+    $float->[0] = 1.414;
+    is( sprintf( "%0.3f", $float->[0] ), sprintf( "%0.3f", 1.414 ), 'Float check' );
+    ok( exists( $float->[0] ), '$float->[0] exists' );
+    ok( !exists( $float->[20] ), '$float->[1] not exists' );
+    is( delete( $float->[1] ), 2, 'Delete returns correctly' );
+    is( $float->[1], 0, 'Deleted record is 0' );
+
+}
 
 my ( $s, @a ) = pack "l!*", 1 .. 5;
 tie @a, 'Tie::Array::Packed::Integer', $s, reverse 1 .. 4;

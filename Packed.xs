@@ -1,5 +1,7 @@
 /* -*- Mode: C -*- */
 
+#define PERL_NO_GET_CONTEXT 1
+
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -34,7 +36,6 @@ void tpa_set_char(pTHX_ char *ptr, SV *sv) {
 SV *tpa_get_char(pTHX_ char *ptr) {
     return newSViv(*ptr);
 }
-
 
 static struct tpa_vtbl vtbl_char = { TPA_MAGIC,
                                      sizeof(char),
@@ -294,16 +295,16 @@ typedef unsigned short ushort_le;
 
 #else
 
-typedef unsigned char ushort_le[2];
+typedef struct _ushort_le { unsigned char c[2]; } ushort_le;
 
 void tpa_set_ushort_le(pTHX_ ushort_le *ptr, SV *sv) {
     UV v = SvUV(sv);
-    ptr[0] = v;
-    ptr[1] = v >> 8;
+    ptr->c[0] = v;
+    ptr->c[1] = v >> 8;
 }
 
 SV *tpa_get_ushort_le(pTHX_ ushort_le *ptr) {
-    return newSVuv(ptr[1] << 8 + ptr[0] );
+    return newSVuv((ptr[1] << 8) + ptr[0] );
 }
 
 #endif
@@ -321,16 +322,16 @@ typedef unsigned short ushort_be;
 
 #else
 
-typedef unsigned char ushort_be[2];
+typedef struct _ushort_be { unsigned char c[2]; } ushort_be;
 
 void tpa_set_ushort_be(pTHX_ ushort_be *ptr, SV *sv) {
     UV v = SvUV(sv);
-    (*ptr)[0] = v >> 8;
-    (*ptr)[1] = v;
+    ptr->c[0] = v >> 8;
+    ptr->c[1] = v;
 }
 
 SV *tpa_get_ushort_be(pTHX_ ushort_be *ptr) {
-    return newSVuv((*ptr)[0] << 8 + (*ptr)[1] );
+    return newSVuv((ptr->c[0] << 8) + ptr->c[1] );
 }
 
 #endif
@@ -355,18 +356,18 @@ typedef unsigned int ulong_le;
 
 #else
 
-typedef unsigned char ulong_le[4];
+typedef struct _ulong_le { unsigned char c[4]; } ulong_le;
 
 void tpa_set_ulong_le(pTHX_ ulong_le *ptr, SV *sv) {
     UV v = SvUV(sv);
-    (*ptr)[0] = v;
-    (*ptr)[1] = (v >>= 8);
-    (*ptr)[2] = (v >>= 8);
-    (*ptr)[3] = (v >>= 8);
+    ptr->c[0] = v;
+    ptr->c[1] = (v >>= 8);
+    ptr->c[2] = (v >>= 8);
+    ptr->c[3] = (v >>= 8);
 }
 
 SV *tpa_get_ulong_le(pTHX_ ulong_le *ptr) {
-    return newSVuv((((*ptr)[3] << 8 + (*ptr)[2] ) << 8 + (*ptr)[1] ) << 8 + (*ptr)[0] );
+    return newSVuv((((((ptr->c[3] << 8) + ptr->c[2] ) << 8) + ptr->c[1] ) << 8) + ptr->c[0] );
 }
 
 #endif
@@ -392,18 +393,18 @@ typedef unsigned long ulong_be;
 
 #else
 
-typedef unsigned char ulong_be[4];
+typedef struct _ulong_be { unsigned char c[4]; } ulong_be;
 
 void tpa_set_ulong_be(pTHX_ ulong_be *ptr, SV *sv) {
     UV v = SvUV(sv);
-    (*ptr)[3] = v;
-    (*ptr)[2] = (v >>= 8);
-    (*ptr)[1] = (v >>= 8);
-    (*ptr)[0] = (v >>= 8);
+    ptr->c[3] = v;
+    ptr->c[2] = (v >>= 8);
+    ptr->c[1] = (v >>= 8);
+    ptr->c[0] = (v >>= 8);
 }
 
 SV *tpa_get_ulong_be(pTHX_ ulong_be *ptr) {
-    return newSVuv((((*ptr)[0] << 8 + (*ptr)[1] ) << 8 + (*ptr)[2] ) << 8 + (*ptr)[3] );
+    return newSVuv((((((ptr->c[0] << 8) + ptr->c[1] ) << 8) + ptr->c[2] ) << 8) + ptr->c[3] );
 }
 
 #endif
@@ -474,6 +475,7 @@ my_sv_unchop(pTHX_ SV *sv, STRLEN size) {
 
 
 MODULE = Tie::Array::Packed		PACKAGE = Tie::Array::Packed
+PROTOTYPES: DISABLE
 
 SV *
 TIEARRAY(klass, type, init)

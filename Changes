@@ -1,9 +1,13 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.03  Apr 26 2006
+        - optimization: allocate more memory than required in front of
+          PV on unshift and split operations.
+
 0.02  Apr 16 2006
-    - correct bugs on handling of n, N, v and V types
+        - correct bugs on handling of n, N, v and V types
 
 0.01  Fri Apr 14 00:06:14 2006
-	- original version; created by h2xs 1.23 with options
+        - original version; created by h2xs 1.23 with options
 		-An Tie::Array::Packed
 

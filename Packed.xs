@@ -12,6 +12,7 @@
 
 #define TPA_MAGIC "TPA"
 
+#define RESERVE_BEFORE ((((size) >> 5) + 8) * (esize))
 
 /*
 
@@ -435,13 +436,13 @@ check_index(pTHX_ U32 ix, U32 esize) {
 }
 
 static char *
-my_sv_unchop(pTHX_ SV *sv, STRLEN size) {
+my_sv_unchop(pTHX_ SV *sv, STRLEN size, STRLEN reserve) {
     STRLEN len;
     char *pv = SvPV(sv, len);
     IV off = SvOOK(sv) ? SvIVX(sv) : 0;
     if (!size)
         return pv;
-
+ 
     if (off >= size) {
         SvLEN_set(sv, SvLEN(sv) + size);
         SvCUR_set(sv, len + size);
@@ -451,28 +452,35 @@ my_sv_unchop(pTHX_ SV *sv, STRLEN size) {
         else
             SvIV_set(sv, off - size);
     }
-    else if (len + size <= off + SvLEN(sv)) {
-        if (off) {
-            SvLEN_set(sv, SvLEN(sv) + off);
-            SvFLAGS(sv) &= ~SVf_OOK;
-        }
-        SvCUR_set(sv, len + size);
-        SvPV_set(sv, pv - off);
-        Move(pv, pv + size - off, len, char);
-    }
     else {
-        SV *tmp = sv_2mortal(newSV(len + size));
-        STRLEN tmp_len;
-        char *tmp_pv;
-        SvPOK_on(tmp);
-        tmp_pv = SvPV(tmp, tmp_len);
-        Move(pv, tmp_pv + size, len, char);
-        SvCUR_set(tmp, size + len);
-        sv_setsv(sv, tmp);
+        size += reserve;
+        if ((size < reserve) || (len + size < size))
+            Perl_croak(aTHX_ "panic: memory wrap");
+        
+        if (len + size <= off + SvLEN(sv)) {
+            SvCUR_set(sv, len + size);
+            SvPV_set(sv, pv - off);
+            Move(pv, pv + size - off, len, char);
+            if (off) {
+                SvLEN_set(sv, SvLEN(sv) + off );
+                SvFLAGS(sv) &= ~SVf_OOK;
+            }
+        }
+        else {
+            SV *tmp = sv_2mortal(newSV(len + size));
+            char *tmp_pv;
+            SvPOK_on(tmp);
+            tmp_pv = SvPV_nolen(tmp);
+            Move(pv, tmp_pv + size, len, char);
+            SvCUR_set(tmp, len + size);
+            sv_setsv(sv, tmp);
+        }
+ 
+        if (reserve)
+            sv_chop(sv, SvPVX(sv) + reserve);
     }
     return SvPVX(sv);
 }
-
 
 MODULE = Tie::Array::Packed		PACKAGE = Tie::Array::Packed
 PROTOTYPES: DISABLE
@@ -794,12 +802,12 @@ UNSHIFT(self, ...)
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
         if (items > 1) {
             U32 esize = vtbl->element_size;
+	    U32 size = SvCUR(data) / esize;
             char *pv;
             U32 i;
 
-            check_index(aTHX_ SvCUR(data) / esize + items - 1, esize);
-
-            pv = my_sv_unchop(aTHX_ data, esize * (items - 1));
+            check_index(aTHX_ size + items - 1, esize);
+            pv = my_sv_unchop(aTHX_ data, esize * (items - 1), RESERVE_BEFORE);
             for (i = 1; i < items; i++, pv += esize) {
                 (*(vtbl->set))(aTHX_ pv, ST(i));
             }
@@ -848,7 +856,7 @@ SPLICE(self, offset, length, ...)
                 if (length)
                     sv_chop(data, pv + length * esize);
                 if (rep) {
-                    pv = my_sv_unchop(aTHX_ data, rep * esize);
+                    pv = my_sv_unchop(aTHX_ data, rep * esize, RESERVE_BEFORE);
                 }
             }
             else {

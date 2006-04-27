@@ -6,14 +6,15 @@ use Tie::Array::PackedC DoubleNative => 'd';
 
 use Tie::Array::Packed;
 
-my $n = 100000;
+my $n = $ARGV[0] || 100_000;
 $|=1;
 sub test {
     my $a = shift;
-    $#$a = $n - 1;
+    # $#$a = $n - 1;
     my $i;
     for ($i=0; $i< $n; $i++) {
         $a->[$i] = $i + .1;
+        my $b = 'foo' . $a->[$i]; # convert to string
     }
     for ($i=0; $i< $n; $i++) {
         $a->[$i] += 0.2

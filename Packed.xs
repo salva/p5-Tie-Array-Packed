@@ -12,7 +12,10 @@
 
 #define TPA_MAGIC "TPA"
 
-#define RESERVE_BEFORE ((((size) >> 5) + 8) * (esize))
+#define RESERVE_BEFORE ((((size) >> 3) + 8) * (esize))
+#define RESERVE_AFTER ((((size) >> 2) + 8) * (esize))
+
+#define MySvGROW(sv, req) (SvLEN(sv) < (req) ? sv_grow((sv), (req) + RESERVE_AFTER ) : SvPVX(sv))
 
 /*
 
@@ -596,11 +599,12 @@ STORE(self, key, value)
         STRLEN req = (key + 1) * esize;
         STRLEN len;
         char *pv = SvPV(data, len);
+        U32 size = len / esize;
 
         check_index(aTHX_ key, esize);
 
         if (len < req) {
-            pv = SvGROW(data, req);
+            pv = MySvGROW(data, req);
             memset(pv + len, 0, req - len - esize);
             SvCUR_set(data, req);
         }
@@ -652,7 +656,7 @@ STORESIZE(self, size)
         STRLEN req = size * esize;
         STRLEN len;
         char *pv = SvPV(data, len);
-
+        
         check_index(aTHX_ size, esize);
 
         if (len < req) {
@@ -737,17 +741,17 @@ PUSH(self, ...)
         U32 esize = vtbl->element_size;
         STRLEN len;
         char *pv = SvPV(data, len);
-        U32 key = len / esize;
-        STRLEN req = (key + items - 1) * esize;
+        U32 size = len / esize;
+        STRLEN req = (size + items - 1) * esize;
         U32 i;
 
-        check_index(aTHX_ key + items - 1, esize);
+        check_index(aTHX_ size + items - 1, esize);
 
-        pv = SvGROW(data, req);
+        pv = MySvGROW(data, req);
         SvCUR_set(data, req);
 
         for (i = 1; i < items; i++)
-            (*(vtbl->set))(aTHX_ pv + (key + i - 1) * esize, ST(i));
+            (*(vtbl->set))(aTHX_ pv + (size + i - 1) * esize, ST(i));
     }
 
 SV *
@@ -860,7 +864,7 @@ SPLICE(self, offset, length, ...)
                 }
             }
             else {
-                pv = SvGROW(data, (size + rep - length) * esize);
+                pv = MySvGROW(data, (size + rep - length) * esize);
                 SvCUR_set(data, (size - length + rep) * esize);
                 if (offset + length < size)
                     Move(pv + (offset + length) * esize,

@@ -2,7 +2,7 @@ package Tie::Array::Packed;
 
 use 5.008;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use strict;
 use warnings;
@@ -47,8 +47,11 @@ for my $name (keys %map) {
         sub {
             my $class = shift;
             my $self;
-            $self = TIEARRAY($class, $type, @_ ? shift : '');
-            $self->SPLICE(0, scalar(@_), @_) if @_;
+            $self = TIEARRAY($class, $type, defined $_[0] ? $_[0] : '');
+            if (@_ > 1) {
+                shift;
+                $self->SPLICE(0, scalar(@_), @_);
+            }
             $self;
         };
 }
@@ -64,8 +67,6 @@ sub make_with_packed {
     tie my(@self), $class, @_;
     return \@self
 }
-
-
 
 sub string {
     my $self = shift;
@@ -229,11 +230,18 @@ Documentation for Perl builtins L<pack> and L<vec>.
 L<Tie::Array::PackedC> offers very similar functionality, but it is
 implemented in pure Perl and so it is slower.
 
+L<Tie::Array::Packed::Auto> is a wrapper module that loads
+Tie::Array::Packed when available, otherwise it uses
+Tie::Array::PackedC to provide an identical API.
+
 L<Array::Packed> is implemented in C but only supports integer values.
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2006 by Salvador FandiE<ntilde>o (sfandino@yahoo.com).
+
+Some parts copied from Tie::Array::PackedC (C) 2003-2006 by Yves
+Orton.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,

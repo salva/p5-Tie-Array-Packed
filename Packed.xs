@@ -216,10 +216,10 @@ void tpa_set_ulong_native(pTHX_ unsigned long *ptr, SV *sv) {
 #if (IVSIZE >= LONGSIZE)
     *ptr = SvUV(sv);
 #else
-    if (SvUOK(sv))
-        *ptr = SvUV(sv);
-    else
+    if (SvIOK(sv) && !SvIOK_notUV(sv))
         *ptr = SvNV(sv);
+    else
+        *ptr = SvUV(sv);
 #endif
 }
 
@@ -268,10 +268,10 @@ void tpa_set_ulonglong_native(pTHX_ unsigned long long *ptr, SV *sv) {
 #if IVSIZE >= LONGLONGSIZE
     *ptr = SvUV(sv);
 #else
-    if (SvUOK(sv))
-        *ptr = SvUV(sv);
-    else
+    if (SvIOK(sv) && !SvIOK_notUV(sv))
         *ptr = SvNV(sv);
+    else
+        *ptr = SvUV(sv);
 #endif
 }
 
@@ -308,7 +308,7 @@ void tpa_set_ushort_le(pTHX_ ushort_le *ptr, SV *sv) {
 }
 
 SV *tpa_get_ushort_le(pTHX_ ushort_le *ptr) {
-    return newSVuv((ptr[1] << 8) + ptr[0] );
+    return newSVuv((ptr->c[1] << 8) + ptr->c[0] );
 }
 
 #endif
@@ -580,7 +580,11 @@ TIEARRAY(klass, type, init)
             RETVAL = newRV_noinc(data);
             if (SvOK(klass))
                 sv_bless(RETVAL, gv_stashsv(klass, 1));
+#if (PERL_VERSION < 7)
+            sv_magic(data, 0, '~', (char *)vtbl, sizeof(*vtbl));
+#else
             sv_magic(data, 0, '~', (char *)vtbl, 0);
+#endif
         }
     }
   OUTPUT:

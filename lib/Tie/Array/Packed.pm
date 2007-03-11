@@ -1,8 +1,8 @@
 package Tie::Array::Packed;
 
-use 5.008;
+# use 5.008;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use strict;
 use warnings;

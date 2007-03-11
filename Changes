@@ -1,5 +1,10 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.06  Mar 11, 2007
+        - correct bug on machines with shorts bigger than 16bits
+          failing compilation
+        - make it work under perl 5.6.x
+
 0.05  Mar 11, 2007
         - eliminate bug in test script failing in 64bits systems
         - pod errors corrected

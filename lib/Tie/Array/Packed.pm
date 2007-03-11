@@ -2,7 +2,7 @@ package Tie::Array::Packed;
 
 use 5.008;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use strict;
 use warnings;
@@ -213,6 +213,8 @@ initialize the storage scalar.
 returns the pack template in use for the elements of the tied array
 C<@foo>.
 
+=back
+
 =head1 BUGS
 
 This is an early release, critical bugs may appear.
@@ -238,7 +240,8 @@ L<Array::Packed> is implemented in C but only supports integer values.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006 by Salvador FandiE<ntilde>o (sfandino@yahoo.com).
+Copyright (C) 2006, 2007 by Salvador FandiE<ntilde>o
+(sfandino@yahoo.com).
 
 Some parts copied from Tie::Array::PackedC (C) 2003-2006 by Yves
 Orton.

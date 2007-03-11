@@ -5,6 +5,7 @@ Packed.xs
 ppport.h
 README
 t/Tie-Array-Packed.t
+t/pods.t
 lib/Tie/Array/Packed.pm
 bm/bm.pl
 bm/mm.pl

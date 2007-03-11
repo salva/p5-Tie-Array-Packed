@@ -2,7 +2,7 @@ Tie-Array-Packed
 ================
 
 Implementation of the tie array interface, that uses an in memory Perl
-scalar as storage.
+scalar as packed storage.
 
 INSTALLATION
 

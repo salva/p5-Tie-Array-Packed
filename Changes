@@ -1,5 +1,10 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.05  Mar 11, 2007
+        - eliminate bug in test script failing in 64bits systems
+        - pod errors corrected
+        - pod check added
+
 0.04  Apr 27 2006
         - optimization: eliminate copy of string on TIEARRAY
         - optimization: preallocate more memory than required at the

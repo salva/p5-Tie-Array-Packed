@@ -508,16 +508,16 @@ TIEARRAY(klass, type, init)
                 vtbl = &vtbl_uchar;
                 break;
             case 'i':
-                if (type[1])
-                    vtbl = &vtbl_int_native;
-                else
-                    vtbl = &vtbl_IV;
+                vtbl = &vtbl_int_native;
                 break;
             case 'I':
-                if (type[1])
-                    vtbl = &vtbl_uint_native;
-                else
-                    vtbl = &vtbl_UV;
+                vtbl = &vtbl_uint_native;
+                break;
+            case 'j':
+                vtbl = &vtbl_IV;
+                break;
+            case 'J':
+                vtbl = &vtbl_UV;
                 break;
             case 'f':
                 vtbl = &vtbl_float;

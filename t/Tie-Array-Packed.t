@@ -11,7 +11,7 @@ BEGIN {
     use_ok( 'Tie::Array::Packed' );
 }
 
-for my $packer (qw(c C F f d i I i! I! s! S! l! L! n N v )) {
+for my $packer (qw(c C F f d i I j J s! S! l! L! n N v )) {
     my $class = "Tie::Array::Packed::$packer";
 
     my $tie = $class->make(1 .. 20 );
@@ -50,7 +50,8 @@ for my $packer (qw(F f d)) {
 
 }
 
-my ( $s, @a ) = pack "i*", 1 .. 5;
+my ( $s, @a ) = pack "j*", 1 .. 5;
+# diag("length \$s: ".length($s));
 tie @a, 'Tie::Array::Packed::Integer', $s, reverse 1 .. 4;
 is( "@a", "4 3 2 1 5", "Doc check 1 - Initialization overlap" );
 $s = pack "l!*", 1 .. 5;

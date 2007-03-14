@@ -1,5 +1,11 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.07  Mar 14, 2007
+        - backward incompatible change: use j and J as the
+          template for IVs and UVs; and i and I for ints and unsigned
+          ints respectively.
+        - make it work in 64bit systems
+
 0.06  Mar 11, 2007
         - correct bug on machines with shorts bigger than 16bits
           failing compilation

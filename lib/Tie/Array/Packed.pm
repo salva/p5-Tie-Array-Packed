@@ -2,7 +2,7 @@ package Tie::Array::Packed;
 
 # use 5.008;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use strict;
 use warnings;
@@ -10,7 +10,7 @@ use warnings;
 require XSLoader;
 XSLoader::load('Tie::Array::Packed', $VERSION);
 
-my @short = qw(c C F f d i I i! I! s! S! l! L! n N v V);
+my @short = qw(c C F f d i I j J s! S! l! L! n N v V);
 
 my %map = ( Char => 'c',
             UnsignedChar => 'C',
@@ -18,10 +18,12 @@ my %map = ( Char => 'c',
             Number => 'F',
             FloatNative => 'f',
             DoubleNative => 'd',
-            Integer => 'i',
-            UnsignedInteger => 'I',
-            IntegerNative => 'i!',
-            UnsignedIntegerNative => 'I!',
+            Integer => 'j',
+            UnsignedInteger => 'J',
+            IntegerPerl => 'j',
+            UnsignedIntegerPerl => 'J',
+            IntegerNative => 'i',
+            UnsignedIntegerNative => 'I',
             ShortNative => 's!',
             UnsignedShortNative => 'S!',
             LongNative => 'l!',
@@ -129,10 +131,10 @@ and are as follows:
   Tie::Array::Packed::Number                 F     NV
   Tie::Array::Packed::FloatNative            f     float
   Tie::Array::Packed::DoubleNative           d     double
-  Tie::Array::Packed::Integer                i     IV
-  Tie::Array::Packed::UnsignedInteger        I     UV
-  Tie::Array::Packed::IntegerNative          i!    int
-  Tie::Array::Packed::UnsignedIntegerNative  I!    unsigned int
+  Tie::Array::Packed::Integer                j     IV
+  Tie::Array::Packed::UnsignedInteger        J     UV
+  Tie::Array::Packed::IntegerNative          i     int
+  Tie::Array::Packed::UnsignedIntegerNative  I     unsigned int
   Tie::Array::Packed::ShortNative            s!    short
   Tie::Array::Packed::UnsignedShortNative    S!    unsigned short
   Tie::Array::Packed::LongNative             l!    long

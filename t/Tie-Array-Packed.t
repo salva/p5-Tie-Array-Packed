@@ -11,27 +11,32 @@ BEGIN {
     use_ok( 'Tie::Array::Packed' );
 }
 
-for my $packer (qw(c C F f d i I j J s! S! l! L! n N v )) {
-    my $class = "Tie::Array::Packed::$packer";
+for my $packer (qw(c C F f d i I j J s! S! l! L! n N v)) {
 
-    my $tie = $class->make(1 .. 20 );
-    my $obj = tied(@$tie);
-    isa_ok( $tie, 'ARRAY', 'make returned an object that' );
-    isa_ok( $obj, 'Tie::Array::Packed', 'the tied object' );
-    is( "@$tie",    "@{[1..20]}", "All $packer" );
-    is( $tie->[0],  1,            "Zero index $packer" );
-    is( $tie->[3],  4,            "Intermediate index $packer" );
-    is( $tie->[19], 20,           "Last index $packer" );
-    is( $tie->[-1], 20,           "Last index (-1) $packer" );
-    is( $tie->[20], undef,        "Out of bounds $packer" );
+    SKIP: {
+            skip("packing format $packer unsupported on this perl", 12)
+                unless eval { pack $packer, 1 || 1 };
 
-    push @$tie, 10;
+            my $class = "Tie::Array::Packed::$packer";
 
-    is( $tie->[20], 10, 'Pushed' );
-    is( pop @$tie,  10, 'Popped' );
-    is( @$tie,      20, 'Count' );
-    is( $#$tie,     19, 'Count 2' );
+            my $tie = $class->make(1 .. 20 );
+            my $obj = tied(@$tie);
+            isa_ok( $tie, 'ARRAY', 'make returned an object that' );
+            isa_ok( $obj, 'Tie::Array::Packed', 'the tied object' );
+            is( "@$tie",    "@{[1..20]}", "All $packer" );
+            is( $tie->[0],  1,            "Zero index $packer" );
+            is( $tie->[3],  4,            "Intermediate index $packer" );
+            is( $tie->[19], 20,           "Last index $packer" );
+            is( $tie->[-1], 20,           "Last index (-1) $packer" );
+            is( $tie->[20], undef,        "Out of bounds $packer" );
 
+            push @$tie, 10;
+
+            is( $tie->[20], 10, 'Pushed' );
+            is( pop @$tie,  10, 'Popped' );
+            is( @$tie,      20, 'Count' );
+            is( $#$tie,     19, 'Count 2' );
+        };
 }
 
 for my $packer (qw(F f d)) {
@@ -50,10 +55,17 @@ for my $packer (qw(F f d)) {
 
 }
 
-my ( $s, @a ) = pack "j*", 1 .. 5;
+my ( $s, @a ) = eval { pack "j*", 1 .. 5 };
 # diag("length \$s: ".length($s));
-tie @a, 'Tie::Array::Packed::Integer', $s, reverse 1 .. 4;
-is( "@a", "4 3 2 1 5", "Doc check 1 - Initialization overlap" );
+
+SKIP: {
+    skip("packing format j unsupported on this perl", 1)
+        unless defined $s;
+
+    tie @a, 'Tie::Array::Packed::Integer', $s, reverse 1 .. 4;
+    is( "@a", "4 3 2 1 5", "Doc check 1 - Initialization overlap" );
+};
+
 $s = pack "l!*", 1 .. 5;
 tie @a, 'Tie::Array::Packed::LongNative', $s, reverse 1 .. 4;
 is( "@a", "4 3 2 1 5", "Doc check 1 - Initialization overlap" );

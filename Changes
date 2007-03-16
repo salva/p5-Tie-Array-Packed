@@ -1,5 +1,8 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.08  Mar 16, 2007
+        - skip tests using unsupported packers under older perls
+
 0.07  Mar 14, 2007
         - backward incompatible change: use j and J as the
           template for IVs and UVs; and i and I for ints and unsigned

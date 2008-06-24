@@ -1,14 +1,15 @@
 package Tie::Array::Packed;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 use strict;
 use warnings;
+use Carp;
 
 require XSLoader;
 XSLoader::load('Tie::Array::Packed', $VERSION);
 
-my @short = qw(c C F f d i I j J s! S! l! L! n N v V);
+my @short = qw(c C F f d i I j J s! S! l! L! n N v V q Q);
 
 my %map = ( Char => 'c',
             UnsignedChar => 'C',
@@ -19,7 +20,9 @@ my %map = ( Char => 'c',
             Integer => 'j',
             UnsignedInteger => 'J',
             IntegerPerl => 'j',
+            IV => 'j',
             UnsignedIntegerPerl => 'J',
+            UV => 'J',
             IntegerNative => 'i',
             UnsignedIntegerNative => 'I',
             ShortNative => 's!',
@@ -33,7 +36,12 @@ my %map = ( Char => 'c',
             UnsignedShortVax => 'v',
             UnsignedShortLE => 'v',
             UnsignedLongVax => 'V',
-            UnsignedLongLE => 'V' );
+            UnsignedLongLE => 'V',
+            Quad => 'q',
+            UnsignedQuad => 'Q',
+            LongLong => 'q',
+            UnsignedLongLong => 'Q',
+          );
 
 
 @map{@short} = @short;
@@ -68,9 +76,58 @@ sub make_with_packed {
     return \@self
 }
 
+sub make_clone {
+    my $self = shift;
+    tie my(@clone), ref($self), $$self;
+    return \@clone;
+}
+
 sub string {
     my $self = shift;
     $$self;
+}
+
+my $sort_packed_loaded;
+
+sub sort {
+    @_ > 2 and croak 'Usage: tied(@parray)->sort([sub { CMP($a, $b) }])';
+
+    my $self = shift;
+    unless ($sort_packed_loaded) {
+        eval { require Sort::Packed };
+        croak __PACKAGE__ ."::sort requires package Sort::Packed"
+            if ($@ or !$Sort::Packed::VERSION);
+        $sort_packed_loaded++
+    }
+    my $packer = $self->packer;
+    if (@_) {
+        my $cmp = shift;
+        &Sort::Packed::sort_packed_custom($cmp, $packer, $$self);
+    }
+    else {
+        &Sort::Packed::sort_packed($packer, $$self);
+    }
+}
+
+sub grep {
+    @_ != 2 and croak 'Usage: tied(@parray)->grep(sub { SELECT($_) })';
+
+    my $self = shift;
+    my $select = shift;
+
+    my $last = $self->FETCHSIZE - 1;
+    my $slow = 0;
+    for my $i (0..$last) {
+        for ($self->FETCH($i)) {
+            my $cp = $_;
+            if (&$select) {
+                $self->STORE($slow, $cp) if $slow < $i;
+                $slow++
+            }
+        }
+    }
+    $self->STORESIZE($slow);
+    $slow;
 }
 
 1;
@@ -152,8 +209,8 @@ classes will be also available:
                                            pack      C
             class name                    pattern   type
   --------------------------------------------------------------------
-  Tie::Array::Packed::LongLong                q     long long
-  Tie::Array::Packed::UnsignedLongLong        Q     unsigned long long
+  Tie::Array::Packed::Quad                   q     long long
+  Tie::Array::Packed::UnsignedQuad           Q     unsigned long long
 
 
 The tie interface for those clases is:
@@ -199,19 +256,43 @@ class.
 
 Note that the returned array is not blessed into any package.
 
-
-
 =item Tie::Array::Packed::Integer->make_with_packed($init_string)
 
 =item Tie::Array::Packed::Integer->make_with_packed($init_string, @init_values)
 
-similar to the method before but get an additional argument to
+similar to the method before but gets an additional argument to
 initialize the storage scalar.
+
+=item tied(@array)->make_clone;
+
+returns a reference to a tied array that is a clone of C<@array>.
+
+Alternatively, to clone a tied array this idiom can be used:
+
+  my $tied = tied(@array);
+  tie my (@clone), ref($tied), $$tied;
+
 
 =item tied(@foo)->packer
 
 returns the pack template in use for the elements of the tied array
 C<@foo>.
+
+=item tied(@foo)->reverse()
+
+reverses the order of the elements packed into the array
+
+=item tied(@foo)->rotate($places)
+
+=item tied(@foo)->grep(sub { ...})
+
+in-place filter elements that comply with some condition.
+
+=item tied(@foo)->sort()
+
+=item tied(@foo)->sort(sub { ...})
+
+See L<Sort::Packed> for the details about this methods.
 
 =back
 
@@ -240,7 +321,7 @@ L<Array::Packed> is implemented in C but only supports integer values.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006, 2007 by Salvador FandiE<ntilde>o
+Copyright (C) 2006-2008 by Salvador FandiE<ntilde>o
 (sfandino@yahoo.com).
 
 Some parts copied from Tie::Array::PackedC (C) 2003-2006 by Yves

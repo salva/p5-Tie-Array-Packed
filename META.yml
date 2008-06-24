@@ -1,11 +1,14 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Tie-Array-Packed
-version:      0.08
-version_from: lib/Tie/Array/Packed.pm
-installdirs:  site
-requires:
+--- #YAML:1.0
+name:                Tie-Array-Packed
+version:             0.09
+abstract:            store arrays in memory efficiently as packed strings
+license:             ~
+author:              
+    - Salvador Fandino <sfandino@yahoo.com>
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
     Test::More:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30_01
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

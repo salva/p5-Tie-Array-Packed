@@ -9,6 +9,7 @@
 #include "ppport.h"
 
 #include <string.h>
+#include <limits.h>
 
 #define TPA_MAGIC "TPA"
 
@@ -27,9 +28,9 @@ TODO:
 
 struct tpa_vtbl {
     char magic[4];
-    U32 element_size;
+    UV element_size;
     void (*set)(pTHX_ void *, SV *);
-    SV *(*get)(pTHX_ void *);
+    void (*get)(pTHX_ void *, SV *);
     char * packer;
 };
 
@@ -37,179 +38,183 @@ void tpa_set_char(pTHX_ char *ptr, SV *sv) {
     *ptr = SvIV(sv);
 }
 
-SV *tpa_get_char(pTHX_ char *ptr) {
-    return newSViv(*ptr);
+void tpa_get_char(pTHX_ char *ptr, SV *sv) {
+    sv_setiv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_char = { TPA_MAGIC,
                                      sizeof(char),
                                      (void (*)(pTHX_ void*, SV*)) &tpa_set_char,
-                                     (SV * (*)(pTHX_ void*)) &tpa_get_char,
+                                     (void (*)(pTHX_ void*, SV*)) &tpa_get_char,
                                      "c" };
 
 void tpa_set_uchar(pTHX_ unsigned char *ptr, SV *sv) {
     *ptr = SvUV(sv);
 }
 
-SV *tpa_get_uchar(pTHX_ unsigned char *ptr) {
-    return newSVuv(*ptr);
+void tpa_get_uchar(pTHX_ unsigned char *ptr, SV *sv) {
+    sv_setuv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_uchar = { TPA_MAGIC,
                                       sizeof(unsigned char),
                                       (void (*)(pTHX_ void*, SV*)) &tpa_set_uchar,
-                                      (SV * (*)(pTHX_ void*)) &tpa_get_uchar,
+                                      (void (*)(pTHX_ void*, SV*)) &tpa_get_uchar,
                                       "C"};
 
 void tpa_set_IV(pTHX_ IV *ptr, SV *sv) {
     *ptr = SvIV(sv);
 }
 
-SV *tpa_get_IV(pTHX_ IV *ptr) {
-    return newSViv(*ptr);
+void tpa_get_IV(pTHX_ IV *ptr, SV *sv) {
+    sv_setiv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_IV = { TPA_MAGIC,
                                    sizeof(IV),
                                    (void (*)(pTHX_ void*, SV*)) &tpa_set_IV,
-                                   (SV * (*)(pTHX_ void*)) &tpa_get_IV,
+                                   (void (*)(pTHX_ void*, SV*)) &tpa_get_IV,
                                    "i" };
 
 void tpa_set_UV(pTHX_ UV *ptr, SV *sv) {
     *ptr = SvUV(sv);
 }
 
-SV *tpa_get_UV(pTHX_ UV *ptr) {
-    return newSVuv(*ptr);
+void tpa_get_UV(pTHX_ UV *ptr, SV *sv) {
+    sv_setuv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_UV = { TPA_MAGIC,
                                    sizeof(UV),
                                    (void (*)(pTHX_ void*, SV*)) &tpa_set_UV,
-                                   (SV * (*)(pTHX_ void*)) &tpa_get_UV,
+                                   (void (*)(pTHX_ void*, SV*)) &tpa_get_UV,
                                    "I" };
 
 void tpa_set_NV(pTHX_ NV *ptr, SV *sv) {
     *ptr = SvNV(sv);
 }
 
-SV *tpa_get_NV(pTHX_ NV *ptr) {
-    return newSVnv(*ptr);
+void tpa_get_NV(pTHX_ NV *ptr, SV *sv) {
+    sv_setnv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_NV = { TPA_MAGIC,
                                    sizeof(NV),
                                    (void (*)(pTHX_ void*, SV*)) &tpa_set_NV,
-                                   (SV * (*)(pTHX_ void*)) &tpa_get_NV,
+                                   (void (*)(pTHX_ void*, SV*)) &tpa_get_NV,
                                    "F" };
 
 void tpa_set_double(pTHX_ double *ptr, SV *sv) {
     *ptr = SvNV(sv);
 }
 
-SV *tpa_get_double(pTHX_ double *ptr) {
-    return newSVnv(*ptr);
+tpa_get_double(pTHX_ double *ptr, SV *sv) {
+    sv_setnv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_double = { TPA_MAGIC,
                                        sizeof(double),
                                        (void (*)(pTHX_ void*, SV*)) &tpa_set_double,
-                                       (SV * (*)(pTHX_ void*)) &tpa_get_double,
+                                       (void (*)(pTHX_ void*, SV*)) &tpa_get_double,
                                        "d" };
 
 void tpa_set_float(pTHX_ float *ptr, SV *sv) {
     *ptr = SvNV(sv);
 }
 
-SV *tpa_get_float(pTHX_ float *ptr) {
-    return newSVnv(*ptr);
+void tpa_get_float(pTHX_ float *ptr, SV *sv) {
+    sv_setnv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_float = { TPA_MAGIC,
                                       sizeof(float),
                                       (void (*)(pTHX_ void*, SV*)) &tpa_set_float,
-                                      (SV * (*)(pTHX_ void*)) &tpa_get_float,
+                                      (void (*)(pTHX_ void*, SV*)) &tpa_get_float,
                                       "f" };
 
 void tpa_set_int_native(pTHX_ int *ptr, SV *sv) {
     *ptr = SvIV(sv);
 }
 
-SV *tpa_get_int_native(pTHX_ int *ptr) {
-    return newSViv(*ptr);
+void tpa_get_int_native(pTHX_ int *ptr, SV *sv) {
+    sv_setiv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_int_native = { TPA_MAGIC,
                                               sizeof(int),
                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_int_native,
-                                              (SV * (*)(pTHX_ void*)) &tpa_get_int_native,
+                                              (void (*)(pTHX_ void*, SV*)) &tpa_get_int_native,
                                               "i!" };
 
 void tpa_set_short_native(pTHX_ short *ptr, SV *sv) {
     *ptr = SvIV(sv);
 }
 
-SV *tpa_get_short_native(pTHX_ short *ptr) {
-    return newSViv(*ptr);
+void tpa_get_short_native(pTHX_ short *ptr, SV *sv) {
+    sv_setiv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_short_native = { TPA_MAGIC,
                                               sizeof(short),
                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_short_native,
-                                              (SV * (*)(pTHX_ void*)) &tpa_get_short_native,
+                                              (void (*)(pTHX_ void*, SV*)) &tpa_get_short_native,
                                               "s!" };
 
 void tpa_set_long_native(pTHX_ long *ptr, SV *sv) {
 #if (IVSIZE >= LONGSIZE)
     *ptr = SvIV(sv);
 #else
-    if (SvIOK(sv))
-        *ptr = SvIV(sv);
+    if (SvIOK(sv)) {
+        if (SvIOK_UV(sv))
+            *ptr = SvUV(sv);
+        else
+            *ptr = SvIV(sv);
+    }
     else
         *ptr = SvNV(sv);
 #endif
 }
 
-SV *tpa_get_long_native(pTHX_ long *ptr) {
+void tpa_get_long_native(pTHX_ long *ptr, SV *sv) {
 #if (IVSIZE >= LONGSIZE)
-    return newSViv(*ptr);
+    sv_setiv(sv, *ptr);
 #else
-    return newSVnv(*ptr);
+    sv_setnv(sv, *ptr);
 #endif
 }
 
 static struct tpa_vtbl vtbl_long_native = { TPA_MAGIC,
                                             sizeof(long),
                                             (void (*)(pTHX_ void*, SV*)) &tpa_set_long_native,
-                                            (SV * (*)(pTHX_ void*)) &tpa_get_long_native,
+                                            (void (*)(pTHX_ void*, SV*)) &tpa_get_long_native,
                                             "l!" };
 
 void tpa_set_uint_native(pTHX_ unsigned int *ptr, SV *sv) {
     *ptr = SvUV(sv);
 }
 
-SV *tpa_get_uint_native(pTHX_ unsigned int *ptr) {
-    return newSVuv(*ptr);
+void tpa_get_uint_native(pTHX_ unsigned int *ptr, SV *sv) {
+    sv_setuv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_uint_native = { TPA_MAGIC,
                                               sizeof(unsigned int),
                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_uint_native,
-                                              (SV * (*)(pTHX_ void*)) &tpa_get_uint_native,
+                                              (void (*)(pTHX_ void*, SV*)) &tpa_get_uint_native,
                                               "S!" };
 
 void tpa_set_ushort_native(pTHX_ unsigned short *ptr, SV *sv) {
     *ptr = SvUV(sv);
 }
 
-SV *tpa_get_ushort_native(pTHX_ unsigned short *ptr) {
-    return newSVuv(*ptr);
+void tpa_get_ushort_native(pTHX_ unsigned short *ptr, SV *sv) {
+    sv_setuv(sv, *ptr);
 }
 
 static struct tpa_vtbl vtbl_ushort_native = { TPA_MAGIC,
                                               sizeof(unsigned short),
                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_ushort_native,
-                                              (SV * (*)(pTHX_ void*)) &tpa_get_ushort_native,
+                                              (void (*)(pTHX_ void*, SV*)) &tpa_get_ushort_native,
                                               "S!" };
 
 void tpa_set_ulong_native(pTHX_ unsigned long *ptr, SV *sv) {
@@ -223,18 +228,18 @@ void tpa_set_ulong_native(pTHX_ unsigned long *ptr, SV *sv) {
 #endif
 }
 
-SV *tpa_get_ulong_native(pTHX_ unsigned long *ptr) {
+void tpa_get_ulong_native(pTHX_ unsigned long *ptr, SV *sv) {
 #if (IVSIZE >= LONGSIZE)
-    return newSVuv(*ptr);
+    sv_setuv(sv, *ptr);
 #else
-    return newSVnv(*ptr);
+    sv_setnv(sv, *ptr);
 #endif
 }
 
 static struct tpa_vtbl vtbl_ulong_native = { TPA_MAGIC,
                                              sizeof(unsigned long),
                                              (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_native,
-                                             (SV * (*)(pTHX_ void*)) &tpa_get_ulong_native,
+                                             (void (*)(pTHX_ void*, SV*)) &tpa_get_ulong_native,
                                              "L!" };
 
 #if defined(HAS_LONG_LONG) && LONGLONGSIZE == 8
@@ -243,25 +248,29 @@ void tpa_set_longlong_native(pTHX_ long long *ptr, SV *sv) {
 #if IVSIZE >= LONGLONGSIZE
     *ptr = SvIV(sv);
 #else
-    if (SvIOK(sv))
-        *ptr = SvIV(sv);
+    if (SvIOK(sv)) {
+        if (SvIOK_UV(sv))
+            *ptr = SvUV(sv);
+        else
+            *ptr = SvIV(sv);
+    }
     else
         *ptr = SvNV(sv);
 #endif
 }
 
-SV *tpa_get_longlong_native(pTHX_ long long *ptr) {
+void tpa_get_longlong_native(pTHX_ long long *ptr, SV *sv) {
 #if IVSIZE >= LONGLONGSIZE
-    return newSViv(*ptr);
+    sv_setiv(sv, *ptr);
 #else
-    return newSVnv(*ptr);
+    sv_setnv(sv, *ptr);
 #endif
 }
 
 static struct tpa_vtbl vtbl_longlong_native = { TPA_MAGIC,
                                                 sizeof(long long),
                                                 (void (*)(pTHX_ void*, SV*)) &tpa_set_longlong_native,
-                                                (SV * (*)(pTHX_ void*)) &tpa_get_longlong_native,
+                                                (void (*)(pTHX_ void*, SV*)) &tpa_get_longlong_native,
                                                 "q" };
 
 void tpa_set_ulonglong_native(pTHX_ unsigned long long *ptr, SV *sv) {
@@ -275,18 +284,18 @@ void tpa_set_ulonglong_native(pTHX_ unsigned long long *ptr, SV *sv) {
 #endif
 }
 
-SV *tpa_get_ulonglong_native(pTHX_ unsigned long long *ptr) {
+void tpa_get_ulonglong_native(pTHX_ unsigned long long *ptr, SV *sv) {
 #if IVSIZE >= LONGLONGSIZE
-    return newSVuv(*ptr);
+    sv_setuv(sv, *ptr);
 #else
-    return newSVnv(*ptr);
+    sv_setnv(sv, *ptr);
 #endif
 }
 
 static struct tpa_vtbl vtbl_ulonglong_native = { TPA_MAGIC,
                                                  sizeof(unsigned long long),
                                                  (void (*)(pTHX_ void*, SV*)) &tpa_set_ulonglong_native,
-                                                 (SV * (*)(pTHX_ void*)) &tpa_get_ulonglong_native,
+                                                 (void (*)(pTHX_ void*, SV*)) &tpa_get_ulonglong_native,
                                                  "Q" };
 
 #endif
@@ -307,8 +316,8 @@ void tpa_set_ushort_le(pTHX_ ushort_le *ptr, SV *sv) {
     ptr->c[1] = v >> 8;
 }
 
-SV *tpa_get_ushort_le(pTHX_ ushort_le *ptr) {
-    return newSVuv((ptr->c[1] << 8) + ptr->c[0] );
+void tpa_get_ushort_le(pTHX_ ushort_le *ptr, SV *sv) {
+    sv_setuv(sv, (ptr->c[1] << 8) + ptr->c[0]);
 }
 
 #endif
@@ -316,7 +325,7 @@ SV *tpa_get_ushort_le(pTHX_ ushort_le *ptr) {
 static struct tpa_vtbl vtbl_ushort_le = { TPA_MAGIC,
                                           sizeof(ushort_le),
                                           (void (*)(pTHX_ void*, SV*)) &tpa_set_ushort_le,
-                                          (SV * (*)(pTHX_ void*)) &tpa_get_ushort_le,
+                                          (void (*)(pTHX_ void*, SV*)) &tpa_get_ushort_le,
                                           "v" };
 #if ((BYTEORDER == 0x4321) && (SHORTSIZE == 2))
 
@@ -334,8 +343,8 @@ void tpa_set_ushort_be(pTHX_ ushort_be *ptr, SV *sv) {
     ptr->c[1] = v;
 }
 
-SV *tpa_get_ushort_be(pTHX_ ushort_be *ptr) {
-    return newSVuv((ptr->c[0] << 8) + ptr->c[1] );
+void tpa_get_ushort_be(pTHX_ ushort_be *ptr, SV *sv) {
+    sv_setuv(sv, (ptr->c[0] << 8) + ptr->c[1] );
 }
 
 #endif
@@ -343,7 +352,7 @@ SV *tpa_get_ushort_be(pTHX_ ushort_be *ptr) {
 static struct tpa_vtbl vtbl_ushort_be = { TPA_MAGIC,
                                           sizeof(ushort_be),
                                           (void (*)(pTHX_ void*, SV*)) &tpa_set_ushort_be,
-                                          (SV * (*)(pTHX_ void*)) &tpa_get_ushort_be,
+                                          (void (*)(pTHX_ void*, SV*)) &tpa_get_ushort_be,
                                           "n" };
 
 #if ((BYTEORDER == 0x1234) && (INTSIZE == 4))
@@ -370,8 +379,8 @@ void tpa_set_ulong_le(pTHX_ ulong_le *ptr, SV *sv) {
     ptr->c[3] = (v >>= 8);
 }
 
-SV *tpa_get_ulong_le(pTHX_ ulong_le *ptr) {
-    return newSVuv((((((ptr->c[3] << 8) + ptr->c[2] ) << 8) + ptr->c[1] ) << 8) + ptr->c[0] );
+void tpa_get_ulong_le(pTHX_ ulong_le *ptr, SV* sv) {
+    sv_setuv((((((ptr->c[3] << 8) + ptr->c[2] ) << 8) + ptr->c[1] ) << 8) + ptr->c[0] );
 }
 
 #endif
@@ -379,7 +388,7 @@ SV *tpa_get_ulong_le(pTHX_ ulong_le *ptr) {
 static struct tpa_vtbl vtbl_ulong_le = { TPA_MAGIC,
                                       sizeof(ulong_le),
                                       (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_le,
-                                      (SV * (*)(pTHX_ void*)) &tpa_get_ulong_le,
+                                      (void (*)(pTHX_ void*, SV*)) &tpa_get_ulong_le,
                                       "V" };
 
 #if ((BYTEORDER == 0x4321) && (INTSIZE == 4))
@@ -407,8 +416,8 @@ void tpa_set_ulong_be(pTHX_ ulong_be *ptr, SV *sv) {
     ptr->c[0] = (v >>= 8);
 }
 
-SV *tpa_get_ulong_be(pTHX_ ulong_be *ptr) {
-    return newSVuv((((((ptr->c[0] << 8) + ptr->c[1] ) << 8) + ptr->c[2] ) << 8) + ptr->c[3] );
+void tpa_get_ulong_be(pTHX_ ulong_be *ptr, SV *sv) {
+    sv_setuv(sv, (((((ptr->c[0] << 8) + ptr->c[1] ) << 8) + ptr->c[2] ) << 8) + ptr->c[3] );
 }
 
 #endif
@@ -416,7 +425,7 @@ SV *tpa_get_ulong_be(pTHX_ ulong_be *ptr) {
 static struct tpa_vtbl vtbl_ulong_be = { TPA_MAGIC,
                                       sizeof(ulong_be),
                                       (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_be,
-                                      (SV * (*)(pTHX_ void*)) &tpa_get_ulong_be,
+                                      (void (*)(pTHX_ void*, SV*)) &tpa_get_ulong_be,
                                       "N" };
 
 
@@ -432,8 +441,8 @@ data_vtbl(pTHX_ SV *sv) {
 }
 
 static void
-check_index(pTHX_ U32 ix, U32 esize) {
-    U32 max = (~((U32)0))/esize;
+check_index(pTHX_ UV ix, UV esize) {
+    UV max = ((UV)(-1))/esize;
     if ( max < ix )
         Perl_croak(aTHX_ "index %d is out of range", ix);
 }
@@ -484,6 +493,50 @@ my_sv_unchop(pTHX_ SV *sv, STRLEN size, STRLEN reserve) {
     }
     return SvPVX(sv);
 }
+
+static void
+reverse_elements(void *ptr, IV len, IV esize) {
+    if ((esize % sizeof(unsigned int) == 0) && (PTR2IV(ptr) % sizeof(unsigned int) == 0)) {
+        int *start, *end;
+        esize /= sizeof(int);
+        start = (int *)ptr;
+        end = start + (len - 1) * esize;
+        if (esize == 1) {
+            while (start < end) {
+                int tmp = *start;
+                *(start++) = *end;
+                *(end--) = tmp;
+            }
+        }
+        else {
+            while (start < end) {
+                int i;
+                for (i = 0; i < esize; i++) {
+                    int tmp = *start;
+                    *(start++) = *end;
+                    *(end++) = tmp;
+                }
+                end -= esize * 2;
+            }
+        }
+    }
+    else {
+        char *start = (char *)ptr;
+        char *end = start + (len - 1) * esize;
+        while (start < end) {
+            int i;
+            for (i = 0; i < esize; i++) {
+                char tmp = *start;
+                *(start++) = *end;
+                *(end++) = tmp;
+            }
+            end -= esize * 2;
+        }
+    }
+}
+
+
+
 
 MODULE = Tie::Array::Packed		PACKAGE = Tie::Array::Packed
 PROTOTYPES: DISABLE
@@ -593,17 +646,17 @@ TIEARRAY(klass, type, init)
 void
 STORE(self, key, value)
     SV *self;
-    U32 key;
+    UV key;
     SV *value;
   CODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN req = (key + 1) * esize;
         STRLEN len;
         char *pv = SvPV(data, len);
-        U32 size = len / esize;
+        UV size = len / esize;
 
         check_index(aTHX_ key, esize);
 
@@ -618,31 +671,33 @@ STORE(self, key, value)
 SV *
 FETCH(self, key)
     SV *self;
-    U32 key;
+    UV key;
   CODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN req = (key + 1) * esize;
         STRLEN len;
         char *pv = SvPV(data, len);
         if (len < req)
             RETVAL = &PL_sv_undef;
-        else
-            RETVAL = (*(vtbl->get))(aTHX_ pv + req - esize);
+        else {
+            RETVAL = newSV(0);
+            (*(vtbl->get))(aTHX_ pv + req - esize, RETVAL);
+        }
     }
   OUTPUT:
     RETVAL
 
-U32
+UV
 FETCHSIZE(self)
     SV *self;
   CODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         RETVAL = SvCUR(data) / esize;
     }
   OUTPUT:
@@ -651,12 +706,12 @@ FETCHSIZE(self)
 void
 STORESIZE(self, size)
     SV *self;
-    U32 size;
+    UV size;
   CODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN req = size * esize;
         STRLEN len;
         char *pv = SvPV(data, len);
@@ -673,12 +728,12 @@ STORESIZE(self, size)
 void
 EXTEND(self, size)
     SV *self;
-    U32 size;
+    UV size;
   CODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN req = size * esize;
         
         check_index(aTHX_ size, esize);
@@ -689,12 +744,12 @@ EXTEND(self, size)
 SV *
 EXISTS(self, key)
     SV *self;
-    U32 key;
+    UV key;
   CODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         RETVAL = ((SvCUR(data) / esize) > key) ? &PL_sv_yes : &PL_sv_undef;
     }
   OUTPUT:
@@ -703,12 +758,12 @@ EXISTS(self, key)
 SV *
 DELETE(self, key)
     SV *self;
-    U32 key;
+    UV key;
   CODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN req = (key + 1) * esize;
         STRLEN len;
         char *pv = SvPV(data, len);
@@ -716,7 +771,8 @@ DELETE(self, key)
         check_index(aTHX_ key, esize);
 
         if (len >= req) {
-            RETVAL = (*(vtbl->get))(aTHX_ pv + req - esize);
+            RETVAL = newSV(0);
+            (*(vtbl->get))(aTHX_ pv + req - esize, RETVAL);
             memset(pv + req - esize, 0, esize);
         }
         else
@@ -742,12 +798,12 @@ PUSH(self, ...)
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN len;
         char *pv = SvPV(data, len);
-        U32 size = len / esize;
+        UV size = len / esize;
         STRLEN req = (size + items - 1) * esize;
-        U32 i;
+        UV i;
 
         check_index(aTHX_ size + items - 1, esize);
 
@@ -765,13 +821,14 @@ POP(self)
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN len;
         char *pv = SvPV(data, len);
-        U32 size = len / esize;
+        UV size = len / esize;
         if (size) {
             STRLEN new_len = (size - 1) * esize;
-            RETVAL = (*(vtbl->get))(aTHX_ pv + new_len);
+            RETVAL = newSV(0);
+            (*(vtbl->get))(aTHX_ pv + new_len, RETVAL);
             SvCUR_set(data, new_len);
         }
         else
@@ -787,12 +844,13 @@ SHIFT(self)
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN len;
         char *pv = SvPV(data, len);
-        U32 size = len / esize;
+        UV size = len / esize;
         if (size) {
-            RETVAL = (*(vtbl->get))(aTHX_ pv);
+            RETVAL = newSV(0);
+            (*(vtbl->get))(aTHX_ pv, RETVAL);
             sv_chop(data, pv + esize);
         }
         else
@@ -809,10 +867,10 @@ UNSHIFT(self, ...)
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
         if (items > 1) {
-            U32 esize = vtbl->element_size;
-	    U32 size = SvCUR(data) / esize;
+            UV esize = vtbl->element_size;
+	    UV size = SvCUR(data) / esize;
             char *pv;
-            U32 i;
+            UV i;
 
             check_index(aTHX_ size + items - 1, esize);
             pv = my_sv_unchop(aTHX_ data, esize * (items - 1), RESERVE_BEFORE);
@@ -825,18 +883,18 @@ UNSHIFT(self, ...)
 void
 SPLICE(self, offset, length, ...)
     SV *self;
-    U32 offset;
-    U32 length;
+    UV offset;
+    UV length;
   PPCODE:
     {
         SV *data = SvRV(self);
         struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        U32 esize = vtbl->element_size;
+        UV esize = vtbl->element_size;
         STRLEN len;
         char *pv = SvPV(data, len);
-        U32 size = len / esize;
-        U32 i;
-        U32 rep = items - 3;
+        UV size = len / esize;
+        UV rep = items - 3;
+        UV i;
 
         if (offset > size)
             offset = size;
@@ -849,12 +907,18 @@ SPLICE(self, offset, length, ...)
         switch (GIMME_V) {
         case G_ARRAY:
             EXTEND(SP, items + length);
-            for (i = 0; i < length; i++)
-                ST(items + i) = sv_2mortal((*(vtbl->get))(aTHX_ pv + (offset + i) * esize));
+            for (i = 0; i < length; i++) {
+                SV *sv = sv_newmortal();
+                (*(vtbl->get))(aTHX_ pv + (offset + i) * esize, sv);
+                ST(items + i) = sv;
+            }
             break;
         case G_SCALAR:
-            if  (length)
-                ST(0) = sv_2mortal((*(vtbl->get))(aTHX_ pv + (offset + length - 1) * esize));
+            if  (length) {
+                SV *sv = sv_newmortal();
+                (*(vtbl->get))(aTHX_ pv + (offset + length - 1) * esize, sv);
+                ST(0) = sv;
+            }
             else
                 ST(0) = &PL_sv_undef;
         }
@@ -894,11 +958,56 @@ SPLICE(self, offset, length, ...)
 char *
 packer(self)
     SV *self;
-  CODE:
-    {
-        SV *data = SvRV(self);
-        struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
-        RETVAL = vtbl->packer;
-    }
-  OUTPUT:
+CODE:
+    SV *data = SvRV(self);
+    struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
+    RETVAL = vtbl->packer;
+OUTPUT:
     RETVAL
+
+UV
+element_size(self)
+    SV *self;
+CODE:
+    SV *data = SvRV(self);
+    struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
+    RETVAL = vtbl->element_size;
+OUTPUT:
+    RETVAL    
+
+void
+reverse(self)
+    SV *self;
+CODE:
+    SV *data = SvRV(self);
+    STRLEN len;
+    char *pv = SvPV(data, len);
+    IV esize = data_vtbl(aTHX_ data)->element_size;
+    reverse_elements(pv, len / esize, esize);
+
+void
+rotate(self, how_much = 1)
+    SV *self
+    IV how_much
+CODE:
+    if (how_much) {
+        SV *data = SvRV(self);
+        STRLEN len;
+        char *pv = SvPV(data, len);
+        IV esize = data_vtbl(aTHX_ data)->element_size;
+        IV size;
+        if (esize % sizeof(int) == 0) {
+            how_much *= esize / sizeof(int);
+            esize = sizeof(int);
+        }
+        size = len / esize;
+        if (how_much < 0)
+            how_much += size;
+        how_much %= size;
+        /* printf("how_much: %d\n", how_much); */
+        reverse_elements(pv, how_much, esize);
+        reverse_elements(pv + how_much * esize, size - how_much, esize);
+        reverse_elements(pv, size, esize);
+    }
+
+

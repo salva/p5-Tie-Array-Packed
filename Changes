@@ -1,5 +1,10 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.09  Jun 24, 2008
+        - 64 bit clean up for indexes
+        - really support quad types
+        - sort, grep, reverse and rotate utility methods added
+
 0.08  Mar 16, 2007
         - skip tests using unsupported packers under older perls
 

@@ -300,7 +300,7 @@ static struct tpa_vtbl vtbl_ulonglong_native = { TPA_MAGIC,
 
 #endif
 
-#if ((BYTEORDER == 0x1234) && (SHORTSIZE == 2))
+#if (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (SHORTSIZE == 2))
 
 typedef unsigned short ushort_le;
 #define tpa_set_ushort_le tpa_set_ushort_native
@@ -327,7 +327,7 @@ static struct tpa_vtbl vtbl_ushort_le = { TPA_MAGIC,
                                           (void (*)(pTHX_ void*, SV*)) &tpa_set_ushort_le,
                                           (void (*)(pTHX_ void*, SV*)) &tpa_get_ushort_le,
                                           "v" };
-#if ((BYTEORDER == 0x4321) && (SHORTSIZE == 2))
+#if (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (SHORTSIZE == 2))
 
 typedef unsigned short ushort_be;
 #define tpa_set_ushort_be tpa_set_ushort_native
@@ -355,13 +355,19 @@ static struct tpa_vtbl vtbl_ushort_be = { TPA_MAGIC,
                                           (void (*)(pTHX_ void*, SV*)) &tpa_get_ushort_be,
                                           "n" };
 
-#if ((BYTEORDER == 0x1234) && (INTSIZE == 4))
+#if (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (SHORTSIZE == 4))
+
+typedef unsigned short ulong_le;
+#define tpa_set_ulong_le tpa_set_ushort_native
+#define tpa_get_ulong_le tpa_get_ushort_native
+
+#elif (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (INTSIZE == 4))
 
 typedef unsigned int ulong_le;
 #define tpa_set_ulong_le tpa_set_uint_native
 #define tpa_get_ulong_le tpa_get_uint_native
 
-#elif ((BYTEORDER == 0x1234) && (LONGSIZE == 4))
+#elif (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (LONGSIZE == 4))
 
 typedef unsigned int ulong_le;
 #define tpa_set_ulong_le tpa_set_ulong_native
@@ -380,7 +386,7 @@ void tpa_set_ulong_le(pTHX_ ulong_le *ptr, SV *sv) {
 }
 
 void tpa_get_ulong_le(pTHX_ ulong_le *ptr, SV* sv) {
-    sv_setuv((((((ptr->c[3] << 8) + ptr->c[2] ) << 8) + ptr->c[1] ) << 8) + ptr->c[0] );
+    sv_setuv(sv, (((((ptr->c[3] << 8) + ptr->c[2] ) << 8) + ptr->c[1] ) << 8) + ptr->c[0] );
 }
 
 #endif
@@ -391,14 +397,20 @@ static struct tpa_vtbl vtbl_ulong_le = { TPA_MAGIC,
                                       (void (*)(pTHX_ void*, SV*)) &tpa_get_ulong_le,
                                       "V" };
 
-#if ((BYTEORDER == 0x4321) && (INTSIZE == 4))
+#if  (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (SHORTSIZE == 4))
+
+typedef unsigned short ulong_be;
+#define tpa_set_ulong_be tpa_set_ushort_native
+#define tpa_get_ulong_be tpa_get_ushort_native
+
+#elif (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (INTSIZE == 4))
 
 typedef unsigned int ulong_be;
 #define tpa_set_ulong_be tpa_set_uint_native
 #define tpa_get_ulong_be tpa_get_uint_native
 
 
-#elif ((BYTEORDER == 0x4321) && (LONGSIZE == 4))
+#elif (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (LONGSIZE == 4))
 
 typedef unsigned long ulong_be;
 #define tpa_set_ulong_be tpa_set_ulong_native

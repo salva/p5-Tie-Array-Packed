@@ -1,5 +1,10 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.10  Jun 25, 2008
+        - compilation bug "arg 1 of `Perl_sv_setuv' makes pointer from
+          integer" affecting 64 bits platforms corrected.
+        - some other minor 64 bit improvements
+
 0.09  Jun 24, 2008
         - 64 bit clean up for indexes
         - really support quad types

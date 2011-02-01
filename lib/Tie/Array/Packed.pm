@@ -321,7 +321,7 @@ L<Array::Packed> is implemented in C but only supports integer values.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006-2008 by Salvador FandiE<ntilde>o
+Copyright (C) 2006-2008, 2011 by Salvador FandiE<ntilde>o
 (sfandino@yahoo.com).
 
 Some parts copied from Tie::Array::PackedC (C) 2003-2006 by Yves

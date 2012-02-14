@@ -1,5 +1,9 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.11  Feb 14, 2012
+        - add shuffle method
+        - add usage sample
+
 0.10  Jun 25, 2008
         - compilation bug "arg 1 of `Perl_sv_setuv' makes pointer from
           integer" affecting 64 bits platforms corrected.

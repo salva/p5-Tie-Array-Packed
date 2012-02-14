@@ -1,6 +1,6 @@
 package Tie::Array::Packed;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 use strict;
 use warnings;
@@ -89,16 +89,18 @@ sub string {
 
 my $sort_packed_loaded;
 
+sub _load_sort_packed {
+    eval { require Sort::Packed };
+    croak __PACKAGE__ ."::sort requires package Sort::Packed"
+        if ($@ or !$Sort::Packed::VERSION);
+    $sort_packed_loaded++
+}
+
 sub sort {
     @_ > 2 and croak 'Usage: tied(@parray)->sort([sub { CMP($a, $b) }])';
+    $sort_packed_loaded or _load_sort_packed;
 
     my $self = shift;
-    unless ($sort_packed_loaded) {
-        eval { require Sort::Packed };
-        croak __PACKAGE__ ."::sort requires package Sort::Packed"
-            if ($@ or !$Sort::Packed::VERSION);
-        $sort_packed_loaded++
-    }
     my $packer = $self->packer;
     if (@_) {
         my $cmp = shift;
@@ -107,6 +109,15 @@ sub sort {
     else {
         &Sort::Packed::sort_packed($packer, $$self);
     }
+}
+
+
+sub shuffle {
+    @_ != 1 and croak 'Usage: tied(@parray)->shuffle';
+    $sort_packed_loaded or _load_sort_packed;
+
+    my $self = shift;
+    Sort::Packed::shuffle_packed($self->packer, $$self)
 }
 
 sub grep {
@@ -278,30 +289,27 @@ Alternatively, to clone a tied array this idiom can be used:
 returns the pack template in use for the elements of the tied array
 C<@foo>.
 
+=item tied(@foo)->grep(sub { ...})
+
+in-place filter elements that comply with some condition.
+
 =item tied(@foo)->reverse()
 
 reverses the order of the elements packed into the array
 
 =item tied(@foo)->rotate($places)
 
-=item tied(@foo)->grep(sub { ...})
-
-in-place filter elements that comply with some condition.
-
 =item tied(@foo)->sort()
 
 =item tied(@foo)->sort(sub { ...})
 
-See L<Sort::Packed> for the details about this methods.
+=item tied(@foo)->shuffle
+
+See L<Sort::Packed> for the details about these methods.
 
 =back
 
 =head1 BUGS
-
-This is an early release, critical bugs may appear.
-
-Only tested on Linux, though it should work on any OS with a decent C
-compiler.
 
 To report bugs on this module email me to the address that appears
 below or use the CPAN RT system.
@@ -321,7 +329,7 @@ L<Array::Packed> is implemented in C but only supports integer values.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006-2008, 2011 by Salvador FandiE<ntilde>o
+Copyright (C) 2006-2008, 2011-2012 by Salvador FandiE<ntilde>o
 (sfandino@yahoo.com).
 
 Some parts copied from Tie::Array::PackedC (C) 2003-2006 by Yves
@@ -330,6 +338,5 @@ Orton.
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
 at your option, any later version of Perl 5 you may have available.
-
 
 =cut

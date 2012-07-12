@@ -8,6 +8,37 @@
 
 #include "ppport.h"
 
+#if IVSIZE != 8
+
+/* define int64_t and uint64_t when using MinGW compiler */
+#ifdef __MINGW32__
+#include <stdint.h>
+#endif
+
+/* define int64_t and uint64_t when using MS compiler */
+#ifdef _MSC_VER
+#include <stdlib.h>
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#endif
+
+#define MATH_INT64_NATIVE_IF_AVAILABLE
+#include "perl_math_int64.h"
+
+static int perl_math_int64_loaded = 0;
+static void init_quad_support(pTHX) {
+    if (!perl_math_int64_loaded) {
+        PERL_MATH_INT64_LOAD_OR_CROAK;
+        perl_math_int64_loaded = 1;
+    }
+}
+
+#else
+
+static void init_quad_support(pTHX) {}
+
+#endif /* IVSIZE != 8 */
+
 #include <string.h>
 #include <limits.h>
 
@@ -17,14 +48,6 @@
 #define RESERVE_AFTER ((((size) >> 2) + 8) * (esize))
 
 #define MySvGROW(sv, req) (SvLEN(sv) < (req) ? sv_grow((sv), (req) + RESERVE_AFTER ) : SvPVX(sv))
-
-/*
-
-TODO:
-
-- add support for more types
-
-*/
 
 struct tpa_vtbl {
     char magic[4];
@@ -268,67 +291,66 @@ static struct tpa_vtbl vtbl_ulong_native = { TPA_MAGIC,
                                              (SV* (*)(pTHX_ void*)) &tpa_get_ulong_native,
                                              "L!" };
 
-#if defined(HAS_LONG_LONG) && LONGLONGSIZE == 8
+#if IVSIZE == 8
 
 static void
-tpa_set_longlong_native(pTHX_ long long *ptr, SV *sv) {
-#if IVSIZE >= LONGLONGSIZE
+tpa_set_quad_native(pTHX_ IV *ptr, SV *sv) {
     *ptr = SvIV(sv);
-#else
-    if (SvIOK(sv)) {
-        if (SvIOK_UV(sv))
-            *ptr = SvUV(sv);
-        else
-            *ptr = SvIV(sv);
-    }
-    else
-        *ptr = SvNV(sv);
-#endif
 }
 
 static SV *
-tpa_get_longlong_native(pTHX_ long long *ptr) {
-#if IVSIZE >= LONGLONGSIZE
+tpa_get_quad_native(pTHX_ IV *ptr) {
     return newSViv(*ptr);
-#else
-    return newSVnv(*ptr);
-#endif
 }
 
-static struct tpa_vtbl vtbl_longlong_native = { TPA_MAGIC,
-                                                sizeof(long long),
-                                                (void (*)(pTHX_ void*, SV*)) &tpa_set_longlong_native,
-                                                (SV* (*)(pTHX_ void*)) &tpa_get_longlong_native,
-                                                "q" };
-
 static void
-tpa_set_ulonglong_native(pTHX_ unsigned long long *ptr, SV *sv) {
-#if IVSIZE >= LONGLONGSIZE
+tpa_set_uquad_native(pTHX_ UV *ptr, SV *sv) {
     *ptr = SvUV(sv);
-#else
-    if (SvIOK(sv) && !SvIOK_notUV(sv))
-        *ptr = SvNV(sv);
-    else
-        *ptr = SvUV(sv);
-#endif
 }
 
 static SV*
-tpa_get_ulonglong_native(pTHX_ unsigned long long *ptr) {
-#if IVSIZE >= LONGLONGSIZE
+tpa_get_uquad_native(pTHX_ UV *ptr) {
     return newSVuv(*ptr);
-#else
-    return newSVnv(*ptr);
-#endif
 }
 
-static struct tpa_vtbl vtbl_ulonglong_native = { TPA_MAGIC,
-                                                 sizeof(unsigned long long),
-                                                 (void (*)(pTHX_ void*, SV*)) &tpa_set_ulonglong_native,
-                                                 (SV* (*)(pTHX_ void*)) &tpa_get_ulonglong_native,
-                                                 "Q" };
+#else
+
+static void
+tpa_set_quad_native(pTHX_ int64_t *ptr, SV *sv) {
+    *ptr = SvI64(sv);
+}
+
+static SV *
+tpa_get_quad_native(pTHX_ int64_t *ptr) {
+    return newSVi64(*ptr);
+}
+
+static void
+tpa_set_uquad_native(pTHX_ uint64_t *ptr, SV *sv) {
+    *ptr = SvU64(sv);
+}
+
+static SV*
+tpa_get_uquad_native(pTHX_ uint64_t *ptr) {
+    return newSVu64(*ptr);
+}
 
 #endif
+
+static struct tpa_vtbl vtbl_quad_native = { TPA_MAGIC,
+                                            8,
+                                            (void (*)(pTHX_ void*, SV*)) &tpa_set_quad_native,
+                                            (SV* (*)(pTHX_ void*)) &tpa_get_quad_native,
+                                            "q" };
+
+
+static struct tpa_vtbl vtbl_uquad_native = { TPA_MAGIC,
+                                             8,
+                                             (void (*)(pTHX_ void*, SV*)) &tpa_set_uquad_native,
+                                             (SV* (*)(pTHX_ void*)) &tpa_get_uquad_native,
+                                             "Q" };
+
+
 
 #if (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (SHORTSIZE == 2))
 
@@ -659,19 +681,14 @@ TIEARRAY(klass, type, init)
                 if (type[1])
                     vtbl = &vtbl_ulong_native;
                 break;
-#if defined(HAS_LONG_LONG) && LONGLONGSIZE == 8
             case 'q':
-                vtbl = &vtbl_longlong_native;
+                init_quad_support(aTHX);
+                vtbl = &vtbl_quad_native;
                 break;
             case 'Q':
-                vtbl = &vtbl_ulonglong_native;
+                init_quad_support(aTHX);
+                vtbl = &vtbl_uquad_native;
                 break;
-#else
-            case 'q':
-            case 'Q':
-                Perl_croak(aTHX_ "64bit %s packing not supported on this computer", type);
-                break;
-#endif
             }
         }
         if (!vtbl)

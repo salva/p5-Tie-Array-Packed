@@ -9,4 +9,5 @@ WriteMakefile( NAME => 'Tie::Array::Packed',
                LIBS => [''],
                DEFINE => '',
                INC => '-I.',
+               OBJECT => '$(O_FILES)',
              );

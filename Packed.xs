@@ -8,7 +8,13 @@
 
 #include "ppport.h"
 
-#if IVSIZE != 8
+#if (defined(I64TYPE) && (I64SIZE == 8) && (IVSIZE >= 8))
+
+static void init_quad_support(pTHX) {}
+
+#else
+
+#define USE_PERL_MATH_INT64
 
 /* define int64_t and uint64_t when using MinGW compiler */
 #ifdef __MINGW32__
@@ -22,7 +28,6 @@ typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 #endif
 
-#define MATH_INT64_NATIVE_IF_AVAILABLE
 #include "perl_math_int64.h"
 
 static int perl_math_int64_loaded = 0;
@@ -33,11 +38,37 @@ static void init_quad_support(pTHX) {
     }
 }
 
+#endif /* USE_PERL_MATH_INT64 */
+
+
+#if ((LONGSIZE >= 8) &&  ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)))
+
+#define USE_PERL_MATH_INT128
+
+#if __GNUC__ == 4 && __GNUC_MINOR__ < 6
+
+/* workaroung for gcc 4.4/4.5 - see http://gcc.gnu.org/gcc-4.4/changes.html */
+typedef int int128_t __attribute__ ((__mode__ (TI)));
+typedef unsigned int uint128_t __attribute__ ((__mode__ (TI)));
+
 #else
 
-static void init_quad_support(pTHX) {}
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
 
-#endif /* IVSIZE != 8 */
+#endif
+
+#include "perl_math_int128.h"
+
+static int perl_math_int128_loaded = 0;
+static void init_int128_support(pTHX) {
+    if (!perl_math_int128_loaded) {
+        PERL_MATH_INT128_LOAD_OR_CROAK;
+        perl_math_int128_loaded = 1;
+    }
+}
+
+#endif /* USE_PERL_MATH_INT128 */
 
 #include <string.h>
 #include <limits.h>
@@ -291,29 +322,7 @@ static struct tpa_vtbl vtbl_ulong_native = { TPA_MAGIC,
                                              (SV* (*)(pTHX_ void*)) &tpa_get_ulong_native,
                                              "L!" };
 
-#if IVSIZE == 8
-
-static void
-tpa_set_quad_native(pTHX_ IV *ptr, SV *sv) {
-    *ptr = SvIV(sv);
-}
-
-static SV *
-tpa_get_quad_native(pTHX_ IV *ptr) {
-    return newSViv(*ptr);
-}
-
-static void
-tpa_set_uquad_native(pTHX_ UV *ptr, SV *sv) {
-    *ptr = SvUV(sv);
-}
-
-static SV*
-tpa_get_uquad_native(pTHX_ UV *ptr) {
-    return newSVuv(*ptr);
-}
-
-#else
+#if defined(USE_PERL_MATH_INT64)
 
 static void
 tpa_set_quad_native(pTHX_ int64_t *ptr, SV *sv) {
@@ -335,6 +344,28 @@ tpa_get_uquad_native(pTHX_ uint64_t *ptr) {
     return newSVu64(*ptr);
 }
 
+#else
+
+static void
+tpa_set_quad_native(pTHX_ I64TYPE *ptr, SV *sv) {
+    *ptr = SvIV(sv);
+}
+
+static SV *
+tpa_get_quad_native(pTHX_ I64TYPE *ptr) {
+    return newSViv(*ptr);
+}
+
+static void
+tpa_set_uquad_native(pTHX_ U64TYPE *ptr, SV *sv) {
+    *ptr = SvUV(sv);
+}
+
+static SV*
+tpa_get_uquad_native(pTHX_ U64TYPE *ptr) {
+    return newSVuv(*ptr);
+}
+
 #endif
 
 static struct tpa_vtbl vtbl_quad_native = { TPA_MAGIC,
@@ -351,6 +382,41 @@ static struct tpa_vtbl vtbl_uquad_native = { TPA_MAGIC,
                                              "Q" };
 
 
+#if defined(USE_PERL_MATH_INT128)
+
+static void
+tpa_set_int128_native(pTHX_ int128_t *ptr, SV *sv) {
+    *ptr = SvI128(sv);
+}
+
+static SV *
+tpa_get_int128_native(pTHX_ int128_t *ptr) {
+    return newSVi128(*ptr);
+}
+
+static struct tpa_vtbl vtbl_int128_native = { TPA_MAGIC,
+                                              8,
+                                              (void (*)(pTHX_ void*, SV*)) &tpa_set_int128_native,
+                                              (SV* (*)(pTHX_ void*)) &tpa_get_int128_native,
+                                              "e" };
+
+static void
+tpa_set_uint128_native(pTHX_ uint128_t *ptr, SV *sv) {
+    *ptr = SvU128(sv);
+}
+
+static SV*
+tpa_get_uint128_native(pTHX_ uint128_t *ptr) {
+    return newSVu128(*ptr);
+}
+
+static struct tpa_vtbl vtbl_uint128_native = { TPA_MAGIC,
+                                               8,
+                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_uint128_native,
+                                               (SV* (*)(pTHX_ void*)) &tpa_get_uint128_native,
+                                               "E" };
+
+#endif
 
 #if (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (SHORTSIZE == 2))
 
@@ -516,7 +582,7 @@ static void
 check_index(pTHX_ UV ix, UV esize) {
     UV max = ((UV)(-1))/esize;
     if ( max < ix )
-        Perl_croak(aTHX_ "index %d is out of range", ix);
+        Perl_croak(aTHX_ "index %" UVuf " is out of range", ix);
 }
 
 static char *
@@ -689,6 +755,21 @@ TIEARRAY(klass, type, init)
                 init_quad_support(aTHX);
                 vtbl = &vtbl_uquad_native;
                 break;
+#ifdef USE_PERL_MATH_INT128
+            case 'e':
+                init_int128_support(aTHX);
+                vtbl = &vtbl_int128_native;
+                break;
+            case 'E':
+                init_int128_support(aTHX);
+                vtbl = &vtbl_uint128_native;
+                break;
+#else
+            case 'e':
+            case 'E':
+                Perl_croak(aTHX_ "128 bit integers are not supported by your C compiler");
+                break;
+#endif
             }
         }
         if (!vtbl)

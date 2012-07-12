@@ -1,5 +1,9 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.12_01
+        - add support for int64 and int128 numbers via Math::Int64 and
+          Math::Int128 modules
+
 0.11  Feb 14, 2012
         - add shuffle method
         - add usage sample

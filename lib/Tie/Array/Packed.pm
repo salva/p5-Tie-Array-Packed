@@ -1,6 +1,6 @@
 package Tie::Array::Packed;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12_01';
 
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use Carp;
 require XSLoader;
 XSLoader::load('Tie::Array::Packed', $VERSION);
 
-my @short = qw(c C F f d i I j J s! S! l! L! n N v V q Q);
+my @short = qw(c C F f d i I j J s! S! l! L! n N v V q Q e E);
 
 my %map = ( Char => 'c',
             UnsignedChar => 'C',
@@ -41,6 +41,10 @@ my %map = ( Char => 'c',
             UnsignedQuad => 'Q',
             LongLong => 'q',
             UnsignedLongLong => 'Q',
+            Int64 => 'q',
+            UInt64 => 'Q',
+            Int128 => 'e',
+            UInt128 => 'E',
           );
 
 
@@ -214,23 +218,34 @@ and are as follows:
   Tie::Array::Packed::UnsignedLongVax        V     -
   Tie::Array::Packed::UnsignedLongLE         V     -
 
-if your C compiler has support for 64bit long long integers, then this two
-classes will be also available:
+If your Perl was compiled with 64bit support or the module
+L<Math::Int64> is installed, then the following two classes are also
+available:
 
-                                           pack      C
+                                          pack      C
             class name                    pattern   type
   --------------------------------------------------------------------
-  Tie::Array::Packed::Quad                   q     long long
-  Tie::Array::Packed::UnsignedQuad           Q     unsigned long long
+  Tie::Array::Packed::Quad                   q     int64_t
+  Tie::Array::Packed::UnsignedQuad           Q     uint64_t
+
+If your C compiler supports 128bit integers and the module
+L<Math::Int128> is installed, then the following two classes are also
+available:
+
+                                          pack      C
+            class name                    pattern   type
+  --------------------------------------------------------------------
+  Tie::Array::Packed::Int128                 e     int128_t
+  Tie::Array::Packed::UInt128                E     uint128_t
 
 
-The tie interface for those clases is:
+
+The tie interface for all these classes is as follows
+(Tie::Array::Packed::Integer is used as an example):
 
   tie @foo, Tie::Array::Packed::Integer;
   tie @foo, Tie::Array::Packed::Integer, $init_string, @values
 
-(Tie::Array::Packed::Integer is used for example, the same applies to
-the rest of the classes).
 
 When a scalar value C<$init_string> is passed as an argument
 it is used as the initial value for the storage scalar.

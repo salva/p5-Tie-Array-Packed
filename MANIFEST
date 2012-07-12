@@ -10,3 +10,7 @@ lib/Tie/Array/Packed.pm
 bm/bm.pl
 bm/mm.pl
 META.yml                                 Module meta-data (added by MakeMaker)
+perl_math_int64.h
+perl_math_int64.c
+perl_math_int128.h
+perl_math_int128.c

@@ -13,6 +13,7 @@ my @short = qw(c C F f d i I j J s! S! l! L! n N v V q Q e E);
 
 my %map = ( Char => 'c',
             UnsignedChar => 'C',
+            Hex => 'h',
             NV => 'F',
             Number => 'F',
             FloatNative => 'f',

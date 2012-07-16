@@ -121,6 +121,26 @@ static struct tpa_vtbl vtbl_uchar = { TPA_MAGIC,
                                       "C"};
 
 static void
+tpa_set_hex(pTHX_ char *ptr, SV *sv) {
+    int h = SvUV(sv) & 15;
+    *ptr = h + (h > 9 ? 'a' - 10 : '0');
+}
+
+static SV *
+tpa_get_hex(pTHX_ char *ptr) {
+    int c = *ptr;
+    return newSVuv(((c >= '0') && (c <= '9')) ? c - '0'        :
+                   ((c >= 'a') && (c <= 'f')) ? c - ('a' - 10) :
+                   ((c >= 'A') && (c <= 'F')) ? c - ('A' - 10) : 0);
+}
+
+static struct tpa_vtbl vtbl_uchar = { TPA_MAGIC,
+                                      sizeof(unsigned char),
+                                      (void (*)(pTHX_ void*, SV*)) &tpa_set_hex,
+                                      (SV* (*)(pTHX_ void*)) &tpa_get_hex,
+                                      "h"};
+
+static void
 tpa_set_IV(pTHX_ IV *ptr, SV *sv) {
     *ptr = SvIV(sv);
 }
@@ -274,10 +294,10 @@ tpa_get_uint_native(pTHX_ unsigned int *ptr) {
 }
 
 static struct tpa_vtbl vtbl_uint_native = { TPA_MAGIC,
-                                              sizeof(unsigned int),
-                                              (void (*)(pTHX_ void*, SV*)) &tpa_set_uint_native,
-                                              (SV* (*)(pTHX_ void*)) &tpa_get_uint_native,
-                                              "S!" };
+                                            sizeof(unsigned int),
+                                            (void (*)(pTHX_ void*, SV*)) &tpa_set_uint_native,
+                                            (SV* (*)(pTHX_ void*)) &tpa_get_uint_native,
+                                            "S!" };
 
 static void
 tpa_set_ushort_native(pTHX_ unsigned short *ptr, SV *sv) {
@@ -395,7 +415,7 @@ tpa_get_int128_native(pTHX_ int128_t *ptr) {
 }
 
 static struct tpa_vtbl vtbl_int128_native = { TPA_MAGIC,
-                                              8,
+                                              16,
                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_int128_native,
                                               (SV* (*)(pTHX_ void*)) &tpa_get_int128_native,
                                               "e" };
@@ -411,7 +431,7 @@ tpa_get_uint128_native(pTHX_ uint128_t *ptr) {
 }
 
 static struct tpa_vtbl vtbl_uint128_native = { TPA_MAGIC,
-                                               8,
+                                               16,
                                                (void (*)(pTHX_ void*, SV*)) &tpa_set_uint128_native,
                                                (SV* (*)(pTHX_ void*)) &tpa_get_uint128_native,
                                                "E" };
@@ -697,6 +717,9 @@ TIEARRAY(klass, type, init)
                 break;
             case 'C':
                 vtbl = &vtbl_uchar;
+                break;
+            case 'h':
+                vtbl = &vtbl_hex;
                 break;
             case 'i':
                 vtbl = &vtbl_int_native;

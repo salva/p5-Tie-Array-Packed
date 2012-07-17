@@ -134,11 +134,11 @@ tpa_get_hex(pTHX_ char *ptr) {
                    ((c >= 'A') && (c <= 'F')) ? c - ('A' - 10) : 0);
 }
 
-static struct tpa_vtbl vtbl_uchar = { TPA_MAGIC,
-                                      sizeof(unsigned char),
-                                      (void (*)(pTHX_ void*, SV*)) &tpa_set_hex,
-                                      (SV* (*)(pTHX_ void*)) &tpa_get_hex,
-                                      "h"};
+static struct tpa_vtbl vtbl_hex = { TPA_MAGIC,
+                                    sizeof(unsigned char),
+                                    (void (*)(pTHX_ void*, SV*)) &tpa_set_hex,
+                                    (SV* (*)(pTHX_ void*)) &tpa_get_hex,
+                                    "h"};
 
 static void
 tpa_set_IV(pTHX_ IV *ptr, SV *sv) {

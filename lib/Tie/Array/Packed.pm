@@ -325,10 +325,19 @@ See L<Sort::Packed> for the details about these methods.
 
 =back
 
-=head1 BUGS
+=head1 BUGS AND SUPPORT
 
-To report bugs on this module email me to the address that appears
-below or use the CPAN RT system.
+In order to report bugs you can send me and email to the address that
+appears below or use the CPAN RT bugtracking system available at
+L<http://rt.cpan.org>.
+
+The source for the development version of the module is hosted at
+GitHub: L<https://github.com/salva/p5-Tie-Array-Packed>.
+
+=head2 My wishlist
+
+If you like this module and you're feeling generous, take a look at my
+Amazon Wish List: L<http://amzn.com/w/1WU1P6IR5QZ42>
 
 =head1 SEE ALSO
 

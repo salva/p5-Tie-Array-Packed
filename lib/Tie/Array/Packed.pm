@@ -1,6 +1,6 @@
 package Tie::Array::Packed;
 
-our $VERSION = '0.12_01';
+our $VERSION = '0.12_02';
 
 use strict;
 use warnings;

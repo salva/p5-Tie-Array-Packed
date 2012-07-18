@@ -1,5 +1,8 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.12_02  Jul 18, 2012
+        - use latest version of Math::Int128 C API support files  
+
 0.12_01  Jul 17, 2012
         - add support for int64 and int128 numbers via Math::Int64 and
           Math::Int128 modules

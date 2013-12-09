@@ -85,8 +85,46 @@ struct tpa_vtbl {
     UV element_size;
     void (*set)(pTHX_ void *, SV *);
     SV *(*get)(pTHX_ void *);
+    int (*cmp)(pTHX_ void *, void *);
     char * packer;
 };
+
+static int
+tpa_cmp_le(void *ap, void *bp, int size) {
+    unsigned char *apu = (unsigned char *)ap;
+    unsigned char *bpu = (unsigned char *)bp;
+    while (size--) {
+        if (apu[size] < bpu[size]) return -1;
+        if (apu[size] > bpu[size]) return  1;
+    }
+    return 0;
+}
+
+static int
+tpa_cmp_be(void *ap, void *bp, int size) {
+    return memcmp(ap, bp, size);
+}
+
+#define MAKE_CMP(name, type)                             \
+    static int                                           \
+    tpa_cmp_ ## name(pTHX_ void *ap, void *bp) {         \
+        type a = *(type *)ap;                            \
+        type b = *(type *)bp;                            \
+        return (a < b ? -1 : a > b ?  1 : 0);            \
+    }
+
+#define MAKE_CMP_LE(type)                                       \
+    static int                                                  \
+    tpa_cmp_ ## type(pTHX_ void *ap, void *bp) {                \
+        return tpa_cmp_le(ap, bp, sizeof(type));                \
+    }
+
+#define MAKE_CMP_BE(type)                                       \
+    static int                                                  \
+    tpa_cmp_ ## type(pTHX_ void *ap, void *bp) {                \
+        return tpa_cmp_be(ap, bp, sizeof(type));                \
+    }
+
 
 static void
 tpa_set_char(pTHX_ char *ptr, SV *sv) {
@@ -98,10 +136,13 @@ tpa_get_char(pTHX_ char *ptr) {
     return newSViv(*ptr);
 }
 
+MAKE_CMP(char, char)
+
 static struct tpa_vtbl vtbl_char = { TPA_MAGIC,
                                      sizeof(char),
                                      (void (*)(pTHX_ void*, SV*)) &tpa_set_char,
                                      (SV* (*)(pTHX_ void*)) &tpa_get_char,
+                                     &tpa_cmp_char,
                                      "c" };
 
 static void
@@ -114,10 +155,13 @@ tpa_get_uchar(pTHX_ unsigned char *ptr) {
     return newSVuv(*ptr);
 }
 
+MAKE_CMP(uchar, unsigned char)
+
 static struct tpa_vtbl vtbl_uchar = { TPA_MAGIC,
                                       sizeof(unsigned char),
                                       (void (*)(pTHX_ void*, SV*)) &tpa_set_uchar,
                                       (SV* (*)(pTHX_ void*)) &tpa_get_uchar,
+                                      &tpa_cmp_uchar,
                                       "C"};
 
 static void
@@ -126,18 +170,31 @@ tpa_set_hex(pTHX_ char *ptr, SV *sv) {
     *ptr = h + (h > 9 ? 'a' - 10 : '0');
 }
 
+#define HEX2INT(c) \
+    ( ( ((c) >= '0') && ((c) <= '9')) ? (c) - '0' :             \
+      ( ((c) >= 'a') && ((c) <= 'f')) ? (c) - ('a' - 10) :      \
+      ( ((c) >= 'A') && ((c) <= 'F')) ? (c) - ('A' - 10) : 0 ) 
+
 static SV *
 tpa_get_hex(pTHX_ char *ptr) {
     int c = *ptr;
-    return newSVuv(((c >= '0') && (c <= '9')) ? c - '0'        :
-                   ((c >= 'a') && (c <= 'f')) ? c - ('a' - 10) :
-                   ((c >= 'A') && (c <= 'F')) ? c - ('A' - 10) : 0);
+    return newSVuv( HEX2INT(c) );
+}
+
+static int
+tpa_cmp_hex(pTHX_ void *ap, void *bp) {
+    char a = *(char *)ap;
+    char b = *(char *)bp;
+    a = HEX2INT(a);
+    b = HEX2INT(b);
+    return ((a < b) ? -1 : (a > b) ?  1 : 0);
 }
 
 static struct tpa_vtbl vtbl_hex = { TPA_MAGIC,
                                     sizeof(unsigned char),
                                     (void (*)(pTHX_ void*, SV*)) &tpa_set_hex,
                                     (SV* (*)(pTHX_ void*)) &tpa_get_hex,
+                                    &tpa_cmp_hex,
                                     "h"};
 
 static void
@@ -150,11 +207,14 @@ tpa_get_IV(pTHX_ IV *ptr) {
     return newSViv(*ptr);
 }
 
+MAKE_CMP(IV, IV)
+
 static struct tpa_vtbl vtbl_IV = { TPA_MAGIC,
                                    sizeof(IV),
                                    (void (*)(pTHX_ void*, SV*)) &tpa_set_IV,
                                    (SV* (*)(pTHX_ void*)) &tpa_get_IV,
-                                   "i" };
+                                   &tpa_cmp_IV,
+                                   "j" };
 
 static void
 tpa_set_UV(pTHX_ UV *ptr, SV *sv) {
@@ -166,11 +226,14 @@ tpa_get_UV(pTHX_ UV *ptr) {
     return newSVuv(*ptr);
 }
 
+MAKE_CMP(UV, UV)
+
 static struct tpa_vtbl vtbl_UV = { TPA_MAGIC,
                                    sizeof(UV),
                                    (void (*)(pTHX_ void*, SV*)) &tpa_set_UV,
                                    (SV* (*)(pTHX_ void*)) &tpa_get_UV,
-                                   "I" };
+                                   &tpa_cmp_UV,
+                                   "J" };
 
 static void
 tpa_set_NV(pTHX_ NV *ptr, SV *sv) {
@@ -182,10 +245,13 @@ tpa_get_NV(pTHX_ NV *ptr) {
     return newSVnv(*ptr);
 }
 
+MAKE_CMP(NV, NV)
+
 static struct tpa_vtbl vtbl_NV = { TPA_MAGIC,
                                    sizeof(NV),
                                    (void (*)(pTHX_ void*, SV*)) &tpa_set_NV,
                                    (SV* (*)(pTHX_ void*)) &tpa_get_NV,
+                                   &tpa_cmp_NV,
                                    "F" };
 
 static void
@@ -198,10 +264,13 @@ tpa_get_double(pTHX_ double *ptr) {
     return newSVnv(*ptr);
 }
 
+MAKE_CMP(double, double)
+
 static struct tpa_vtbl vtbl_double = { TPA_MAGIC,
                                        sizeof(double),
                                        (void (*)(pTHX_ void*, SV*)) &tpa_set_double,
                                        (SV* (*)(pTHX_ void*)) &tpa_get_double,
+                                       &tpa_cmp_double,
                                        "d" };
 
 static void
@@ -214,10 +283,13 @@ tpa_get_float(pTHX_ float *ptr) {
     return newSVnv(*ptr);
 }
 
+MAKE_CMP(float, float)
+
 static struct tpa_vtbl vtbl_float = { TPA_MAGIC,
                                       sizeof(float),
                                       (void (*)(pTHX_ void*, SV*)) &tpa_set_float,
                                       (SV* (*)(pTHX_ void*)) &tpa_get_float,
+                                      &tpa_cmp_float,
                                       "f" };
 
 static void
@@ -230,11 +302,14 @@ tpa_get_int_native(pTHX_ int *ptr) {
     return newSViv(*ptr);
 }
 
+MAKE_CMP(int_native, int)
+
 static struct tpa_vtbl vtbl_int_native = { TPA_MAGIC,
-                                              sizeof(int),
-                                              (void (*)(pTHX_ void*, SV*)) &tpa_set_int_native,
-                                              (SV* (*)(pTHX_ void*)) &tpa_get_int_native,
-                                              "i!" };
+                                           sizeof(int),
+                                           (void (*)(pTHX_ void*, SV*)) &tpa_set_int_native,
+                                           (SV* (*)(pTHX_ void*)) &tpa_get_int_native,
+                                           &tpa_cmp_int_native,
+                                           "i!" };
 
 static void
 tpa_set_short_native(pTHX_ short *ptr, SV *sv) {
@@ -246,11 +321,14 @@ tpa_get_short_native(pTHX_ short *ptr) {
     return newSViv(*ptr);
 }
 
+MAKE_CMP(short_native, short)
+
 static struct tpa_vtbl vtbl_short_native = { TPA_MAGIC,
-                                              sizeof(short),
-                                              (void (*)(pTHX_ void*, SV*)) &tpa_set_short_native,
-                                              (SV* (*)(pTHX_ void*)) &tpa_get_short_native,
-                                              "s!" };
+                                             sizeof(short),
+                                             (void (*)(pTHX_ void*, SV*)) &tpa_set_short_native,
+                                             (SV* (*)(pTHX_ void*)) &tpa_get_short_native,
+                                             &tpa_cmp_short_native,
+                                             "s!" };
 
 static void
 tpa_set_long_native(pTHX_ long *ptr, SV *sv) {
@@ -277,10 +355,13 @@ tpa_get_long_native(pTHX_ long *ptr) {
 #endif
 }
 
+MAKE_CMP(long_native, long)
+
 static struct tpa_vtbl vtbl_long_native = { TPA_MAGIC,
                                             sizeof(long),
                                             (void (*)(pTHX_ void*, SV*)) &tpa_set_long_native,
                                             (SV* (*)(pTHX_ void*)) &tpa_get_long_native,
+                                            &tpa_cmp_long_native,
                                             "l!" };
 
 static void
@@ -293,10 +374,13 @@ tpa_get_uint_native(pTHX_ unsigned int *ptr) {
     return newSVuv(*ptr);
 }
 
+MAKE_CMP(uint_native, unsigned int)
+
 static struct tpa_vtbl vtbl_uint_native = { TPA_MAGIC,
                                             sizeof(unsigned int),
                                             (void (*)(pTHX_ void*, SV*)) &tpa_set_uint_native,
                                             (SV* (*)(pTHX_ void*)) &tpa_get_uint_native,
+                                            &tpa_cmp_uint_native,
                                             "S!" };
 
 static void
@@ -309,10 +393,13 @@ tpa_get_ushort_native(pTHX_ unsigned short *ptr) {
     return newSVuv(*ptr);
 }
 
+MAKE_CMP(ushort_native, unsigned short)
+
 static struct tpa_vtbl vtbl_ushort_native = { TPA_MAGIC,
                                               sizeof(unsigned short),
                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_ushort_native,
                                               (SV* (*)(pTHX_ void*)) &tpa_get_ushort_native,
+                                              &tpa_cmp_ushort_native,
                                               "S!" };
 
 static void
@@ -336,10 +423,13 @@ tpa_get_ulong_native(pTHX_ unsigned long *ptr) {
 #endif
 }
 
+MAKE_CMP(ulong_native, unsigned long)
+
 static struct tpa_vtbl vtbl_ulong_native = { TPA_MAGIC,
                                              sizeof(unsigned long),
                                              (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_native,
                                              (SV* (*)(pTHX_ void*)) &tpa_get_ulong_native,
+                                             &tpa_cmp_ulong_native,
                                              "L!" };
 
 #if defined(USE_PERL_MATH_INT64)
@@ -354,6 +444,8 @@ tpa_get_quad_native(pTHX_ int64_t *ptr) {
     return newSVi64(*ptr);
 }
 
+MAKE_CMP(quad_native, int64_t)
+
 static void
 tpa_set_uquad_native(pTHX_ uint64_t *ptr, SV *sv) {
     *ptr = SvU64(sv);
@@ -363,6 +455,8 @@ static SV*
 tpa_get_uquad_native(pTHX_ uint64_t *ptr) {
     return newSVu64(*ptr);
 }
+
+MAKE_CMP(uquad_native, uint64_t)
 
 #else
 
@@ -376,6 +470,8 @@ tpa_get_quad_native(pTHX_ I64TYPE *ptr) {
     return newSViv(*ptr);
 }
 
+MAKE_CMP(quad_native, I64TYPE)
+
 static void
 tpa_set_uquad_native(pTHX_ U64TYPE *ptr, SV *sv) {
     *ptr = SvUV(sv);
@@ -386,12 +482,15 @@ tpa_get_uquad_native(pTHX_ U64TYPE *ptr) {
     return newSVuv(*ptr);
 }
 
+MAKE_CMP(uquad_native, U64TYPE)
+
 #endif
 
 static struct tpa_vtbl vtbl_quad_native = { TPA_MAGIC,
                                             8,
                                             (void (*)(pTHX_ void*, SV*)) &tpa_set_quad_native,
                                             (SV* (*)(pTHX_ void*)) &tpa_get_quad_native,
+                                            &tpa_cmp_quad_native,
                                             "q" };
 
 
@@ -399,6 +498,7 @@ static struct tpa_vtbl vtbl_uquad_native = { TPA_MAGIC,
                                              8,
                                              (void (*)(pTHX_ void*, SV*)) &tpa_set_uquad_native,
                                              (SV* (*)(pTHX_ void*)) &tpa_get_uquad_native,
+                                             &tpa_cmp_uquad_native,
                                              "Q" };
 
 
@@ -414,10 +514,13 @@ tpa_get_int128_native(pTHX_ int128_t *ptr) {
     return newSVi128(*ptr);
 }
 
+MAKE_CMP(int128_native, int128_t)
+
 static struct tpa_vtbl vtbl_int128_native = { TPA_MAGIC,
                                               16,
                                               (void (*)(pTHX_ void*, SV*)) &tpa_set_int128_native,
                                               (SV* (*)(pTHX_ void*)) &tpa_get_int128_native,
+                                              &tpa_cmp_int128_native,
                                               "e" };
 
 static void
@@ -430,10 +533,13 @@ tpa_get_uint128_native(pTHX_ uint128_t *ptr) {
     return newSVu128(*ptr);
 }
 
+MAKE_CMP(uint128_native, uint128_t)
+
 static struct tpa_vtbl vtbl_uint128_native = { TPA_MAGIC,
                                                16,
                                                (void (*)(pTHX_ void*, SV*)) &tpa_set_uint128_native,
                                                (SV* (*)(pTHX_ void*)) &tpa_get_uint128_native,
+                                               &tpa_cmp_uint128_native,
                                                "E" };
 
 #endif
@@ -443,6 +549,7 @@ static struct tpa_vtbl vtbl_uint128_native = { TPA_MAGIC,
 typedef unsigned short ushort_le;
 #define tpa_set_ushort_le tpa_set_ushort_native
 #define tpa_get_ushort_le tpa_get_ushort_native
+#define tpa_cmp_ushort_le tpa_cmp_ushort_native
 
 #else
 
@@ -460,18 +567,22 @@ tpa_get_ushort_le(pTHX_ ushort_le *ptr) {
     return newSVuv((ptr->c[1] << 8) + ptr->c[0]);
 }
 
+MAKE_CMP_LE(ushort_le);
+
 #endif
 
 static struct tpa_vtbl vtbl_ushort_le = { TPA_MAGIC,
                                           sizeof(ushort_le),
                                           (void (*)(pTHX_ void*, SV*)) &tpa_set_ushort_le,
                                           (SV* (*)(pTHX_ void*)) &tpa_get_ushort_le,
+                                          &tpa_cmp_ushort_le,
                                           "v" };
 #if (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (SHORTSIZE == 2))
 
 typedef unsigned short ushort_be;
 #define tpa_set_ushort_be tpa_set_ushort_native
 #define tpa_get_ushort_be tpa_get_ushort_native
+#define tpa_cmp_ushort_be tpa_cmp_ushort_native
 
 #else
 
@@ -489,12 +600,15 @@ tpa_get_ushort_be(pTHX_ ushort_be *ptr) {
     return newSVuv( (ptr->c[0] << 8) + ptr->c[1] );
 }
 
+MAKE_CMP_BE(ushort_be)
+
 #endif
 
 static struct tpa_vtbl vtbl_ushort_be = { TPA_MAGIC,
                                           sizeof(ushort_be),
                                           (void (*)(pTHX_ void*, SV*)) &tpa_set_ushort_be,
                                           (SV* (*)(pTHX_ void*)) &tpa_get_ushort_be,
+                                          &tpa_cmp_ushort_be,
                                           "n" };
 
 #if (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (SHORTSIZE == 4))
@@ -502,18 +616,21 @@ static struct tpa_vtbl vtbl_ushort_be = { TPA_MAGIC,
 typedef unsigned short ulong_le;
 #define tpa_set_ulong_le tpa_set_ushort_native
 #define tpa_get_ulong_le tpa_get_ushort_native
+#define tpa_cmp_ulong_le tpa_cmp_ushort_native
 
 #elif (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (INTSIZE == 4))
 
 typedef unsigned int ulong_le;
 #define tpa_set_ulong_le tpa_set_uint_native
 #define tpa_get_ulong_le tpa_get_uint_native
+#define tpa_cmp_ulong_le tpa_cmp_uint_native
 
 #elif (((BYTEORDER == 0x1234) || (BYTEORDER == 0x12345678)) && (LONGSIZE == 4))
 
 typedef unsigned int ulong_le;
 #define tpa_set_ulong_le tpa_set_ulong_native
 #define tpa_get_ulong_le tpa_get_ulong_native
+#define tpa_cmp_ulong_le tpa_cmp_ulong_native
 
 #else
 
@@ -533,25 +650,30 @@ tpa_get_ulong_le(pTHX_ ulong_le *ptr) {
     return newSVuv((((((ptr->c[3] << 8) + ptr->c[2] ) << 8) + ptr->c[1] ) << 8) + ptr->c[0]);
 }
 
+MAKE_CMP_LE(ulong_le)
+
 #endif
 
 static struct tpa_vtbl vtbl_ulong_le = { TPA_MAGIC,
-                                      sizeof(ulong_le),
-                                      (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_le,
-                                      (SV* (*)(pTHX_ void*)) &tpa_get_ulong_le,
-                                      "V" };
+                                         sizeof(ulong_le),
+                                         (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_le,
+                                         (SV* (*)(pTHX_ void*)) &tpa_get_ulong_le,
+                                         &tpa_cmp_ulong_le,
+                                         "V" };
 
 #if  (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (SHORTSIZE == 4))
 
 typedef unsigned short ulong_be;
 #define tpa_set_ulong_be tpa_set_ushort_native
 #define tpa_get_ulong_be tpa_get_ushort_native
+#define tpa_cmp_ulong_be tpa_cmp_ushort_native
 
 #elif (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (INTSIZE == 4))
 
 typedef unsigned int ulong_be;
 #define tpa_set_ulong_be tpa_set_uint_native
 #define tpa_get_ulong_be tpa_get_uint_native
+#define tpa_cmp_ulong_be tpa_cmp_uint_native
 
 
 #elif (((BYTEORDER == 0x4321) || (BYTEORDER == 0x87654321)) && (LONGSIZE == 4))
@@ -559,6 +681,7 @@ typedef unsigned int ulong_be;
 typedef unsigned long ulong_be;
 #define tpa_set_ulong_be tpa_set_ulong_native
 #define tpa_get_ulong_be tpa_get_ulong_native
+#define tpa_cmp_ulong_be tpa_cmp_ulong_native
 
 #else
 
@@ -578,15 +701,16 @@ tpa_get_ulong_be(pTHX_ ulong_be *ptr) {
     return newSVuv((((((ptr->c[0] << 8) + ptr->c[1] ) << 8) + ptr->c[2] ) << 8) + ptr->c[3]);
 }
 
+MAKE_CMP_BE(ulong_be)
+
 #endif
 
 static struct tpa_vtbl vtbl_ulong_be = { TPA_MAGIC,
-                                      sizeof(ulong_be),
-                                      (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_be,
-                                      (SV* (*)(pTHX_ void*)) &tpa_get_ulong_be,
-                                      "N" };
-
-
+                                         sizeof(ulong_be),
+                                         (void (*)(pTHX_ void*, SV*)) &tpa_set_ulong_be,
+                                         (SV* (*)(pTHX_ void*)) &tpa_get_ulong_be,
+                                         &tpa_cmp_ulong_be,
+                                         "N" };
 
 static struct tpa_vtbl *
 data_vtbl(pTHX_ SV *sv) {
@@ -1171,4 +1295,51 @@ CODE:
         reverse_elements(pv, size, esize);
     }
 
+void
+bsearch(self, value)
+    SV *self
+    SV *value
+ALIAS:
+    bsearch_le = 1
+    bsearch_ge = 2
+PPCODE:
+  {
+      SV *data = SvRV(self);
+      struct tpa_vtbl *vtbl = data_vtbl(aTHX_ data);
+      UV esize = vtbl->element_size;      
+      STRLEN len;
+      char *pv = SvPV(data, len);
+      UV a = 0;
+      UV b = len / esize;
+      void *value_packed;
+      Newx(value_packed, esize, char);
+      vtbl->set(aTHX_ value_packed, value);
+      while (b > a) {
+          UV pivot = (a + b) / 2;
+          int cmp = vtbl->cmp(aTHX_ pv + esize * pivot, value_packed);
+          if (cmp < 0)
+              a = pivot + 1;
+          else if (cmp > 0)
+              b = pivot;
+          else {
+              ST(0) = sv_2mortal(newSVuv(pivot));
+              XSRETURN(1);
+          }
+      }
+      switch (ix) {
+      case 1:
+          if (a > 0) {
+              ST(0) = sv_2mortal(newSVuv(a - 1));
+              XSRETURN(1);
+          }
+          break;
+      case 2:
+          if (b < len / esize) {
+              ST(0) = sv_2mortal(newSVuv(b));
+              XSRETURN(1);
+          }
+      }
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+  }
 

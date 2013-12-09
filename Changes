@@ -1,5 +1,9 @@
 Revision history for Perl extension Tie::Array::Packed.
 
+0.13  Dec 8, 2013
+        - sorting methods were broken for type IV on 64 bit machines
+        - add bsearch, bsearch_ge and bsearch_le methods
+
 0.12_02  Jul 18, 2012
         - use latest version of Math::Int128 C API support files  
 

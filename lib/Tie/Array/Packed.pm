@@ -1,6 +1,6 @@
 package Tie::Array::Packed;
 
-our $VERSION = '0.12_02';
+our $VERSION = '0.13';
 
 use strict;
 use warnings;
@@ -323,6 +323,31 @@ reverses the order of the elements packed into the array
 
 See L<Sort::Packed> for the details about these methods.
 
+=item tied(@foo)->bsearch($v)
+
+When called on a sorted packed array, this method uses the binary
+search algorithm to find and return the index of the given value.
+
+Returns undef if the value is not found.
+
+Note that the method does not check if the array is ordered.
+
+=item tied(@foo)->bsearch_le($v)
+
+Similar to C<bsearch>, returns the index of the biggest
+element equal to the given value or lesser.
+
+Returns undef when all the values on the packed array are bigger than
+the given value.
+
+=item tied(@foo)->bsearch_ge($v)
+
+Similar to C<bsearch>, returns the index of the smallest
+element equal to the given value or greater.
+
+Returns undef when all the values on the packed array are smaller than
+the given value.
+
 =back
 
 =head1 BUGS AND SUPPORT
@@ -354,7 +379,7 @@ L<Array::Packed> is implemented in C but only supports integer values.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006-2008, 2011-2012 by Salvador FandiE<ntilde>o
+Copyright (C) 2006-2008, 2011-2013 by Salvador FandiE<ntilde>o
 (sfandino@yahoo.com).
 
 Some parts copied from Tie::Array::PackedC (C) 2003-2006 by Yves

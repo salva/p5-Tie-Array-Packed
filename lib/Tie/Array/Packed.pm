@@ -177,7 +177,7 @@ All the values on a Tie::Array::Packed array are of the same value
 (integers, shorts, doubles, etc.)
 
 The module is written in XS for speed. Tie::Array::Packed arrays are
-aproximately 15 times slower than native ones (for comparison to a
+approximately 15 times slower than native ones (for comparison to a
 pure Perl implementation, arrays tied with L<Tie::Array::PackedC> are
 around 60 times slower than native arrays).
 
@@ -262,7 +262,7 @@ Additional arguments are used to initialize the array, for instance:
   tie @doz, Tie::Array::Packed::Char, 'hello', 1, 2, 3;
   print "@doz"; # prints "1 2 3 108 111";
 
-The underlaying storage scalar can be accessed unreferencing the
+The underlying storage scalar can be accessed dereferencing the
 object returned by tie:
 
   my $obj = tied(@foo);

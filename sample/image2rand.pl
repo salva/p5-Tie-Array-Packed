@@ -8,7 +8,7 @@ use 5.010;
 
 use Tie::Array::Packed;
 use Image::Magick;
-
+use Math::Random qw(random_uniform);
 my $file = shift @ARGV // die <<EOU;
 Usage:
   $0 image_file [n [exp]]
@@ -43,8 +43,9 @@ for my $j (0..$h-1) {
 
 my $top = $acu[-1];
 my $ref = tied(@acu);
-for (1..$n) {
-    my $r = rand($top);
+
+for my $r (random_uniform($n, 0, $top)) {
+    #map rand($top), 1..$n) {
     my $ix = $ref->bsearch_le($r);
     my $j = int($ix / $w);
     my $i = $ix - $j * $w;

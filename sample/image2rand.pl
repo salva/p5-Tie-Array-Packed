@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+# See http://perlmonks.org/?node_id=1065851
 
 use strict;
 use warnings;
@@ -49,5 +50,7 @@ for (1..$n) {
     my $i = $ix - $j * $w;
     $out->SetPixel(x => $w * 2 + $i, y => $j, color => [1, 1, 1]);
 }
+
+$out->Annotate(pointsize => 18, stroke => 'black', fill => 'red', x => 5, y => $h - 5, text => "n: $n, exp: $exp");
 
 $out->Write('out.png');

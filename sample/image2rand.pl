@@ -17,6 +17,7 @@ EOU
 
 my $n = shift @ARGV || 100;
 my $exp = shift @ARGV || 1;
+my $inv = shift;
 
 my $img = Image::Magick->new;
 $img->Read($file);
@@ -34,9 +35,13 @@ $#acu = 1;
 for my $j (0..$h-1) {
     for my $i (0..$w-1) {
         my @c = $img->GetPixel(x => $i, y => $j);
-        my $c = sqrt($c[2] * $c[2] + $c[1] * $c[1] + $c[0] * $c[0]) ** $exp;
-        push @acu, $acu[-1] + $c;
         $out->SetPixel(x => $i, y => $j, color => \@c);
+        if ($inv) {
+            $_ = 1.0 - $_ for @c;
+            # warn "@c";
+        }
+        my $c = sqrt((1/3) * ($c[2] * $c[2] + $c[1] * $c[1] + $c[0] * $c[0])) ** $exp;
+        push @acu, $acu[-1] + $c;
         $out->SetPixel(x => $w + $i, y => $j, color => [$c, $c, $c]);
     }
 }
